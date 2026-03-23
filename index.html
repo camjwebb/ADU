@@ -27,11 +27,13 @@
         body {
             font-family: Arial, Helvetica, sans-serif;
             background: #f4f6fb;
-            padding: 4px 8px 8px 8px;
+            padding: 0 8px;
             color: #1a1a1a;
             min-height: 100vh;
             display: flex;
             flex-direction: column;
+            align-items: center;
+            justify-content: center;
             overflow-y: scroll;
             user-select: none;
         }
@@ -51,11 +53,10 @@
         }
         .container {
             max-width: 420px;
-            margin: 0 auto;
             width: 100%;
             display: flex;
             flex-direction: column;
-            flex: 1;
+            padding: 16px 0;
         }
 
         /* ============================================================
@@ -196,8 +197,9 @@
         }
         .summary-value {
             font-weight: 800;
-            min-width: 80px;
-            max-width: 150px;
+            width: 110px;
+            min-width: 110px;
+            max-width: 110px;
             display: inline-block;
             outline: none;
             text-align: right;
@@ -205,7 +207,6 @@
         }
         #purchaseBig {
             text-align: right;
-            max-width: 200px;
         }
         .summary-value[data-edit] {
             font-style: italic;
@@ -400,7 +401,7 @@
 
             <div class="summary-row">
                 <span class="summary-label summary-top-label" style="font-style: italic;">Home Price</span>
-                <span id="purchaseBig" class="summary-value editable-box" data-edit="homePrice" data-type="currency" style="max-width: 200px; font-weight: 400;" role="textbox" aria-label="Home Price">$0</span>
+                <span id="purchaseBig" class="summary-value editable-box" data-edit="homePrice" data-type="currency" style="font-weight: 400;" role="textbox" aria-label="Home Price">$0</span>
             </div>
 
             <div class="summary-row">
@@ -474,7 +475,8 @@ let state = {
     rentalIncome: 0,
     taxesManuallySet: false,
     hoiManuallySet: false,
-    pmiManuallySet: false
+    pmiManuallySet: false,
+    rentalIncomeManuallySet: false
 };
 
 // Seed state from a known home price so the calculator opens with real numbers
@@ -575,7 +577,7 @@ function calculate(editedField = null) {
     // Determine if PMI should be applied (down payment < 20%)
     const needsPMI = state.downPct < 20;
 
-    // Mark when user manually edits taxes, HOI, or PMI
+    // Mark when user manually edits taxes, HOI, PMI, or rental income
     if (editedField === 'taxes') {
         state.taxesManuallySet = true;
     }
@@ -584,6 +586,9 @@ function calculate(editedField = null) {
     }
     if (editedField === 'pmi') {
         state.pmiManuallySet = true;
+    }
+    if (editedField === 'rentalIncome') {
+        state.rentalIncomeManuallySet = true;
     }
 
     // If user edited home price directly, re-seed everything from that price
@@ -734,8 +739,8 @@ function calculate(editedField = null) {
         state.homePrice = purchase;
     }
 
-    // If basement toggle is on, keep rental income locked to 40% of new payment
-    if (basementOn) {
+    // If basement toggle is on and user hasn't manually set rental income, keep it at 40%
+    if (basementOn && !state.rentalIncomeManuallySet) {
         state.rentalIncome = Math.round(monthlyPayment * 0.40);
         const rentalEl = document.getElementById('rentalIncomeDisplay');
         if (rentalEl && document.activeElement !== rentalEl) {
@@ -757,7 +762,7 @@ function calculate(editedField = null) {
     updateEditableValue('[data-edit="downPaymentDollar"]', state.downPaymentDollar, "currency", "downPaymentDollar");
     updateEditableValue('[data-edit="interestRate"]', state.interestRate, "percent", "interestRate");
     updateEditableValue('[data-edit="termYears"]', state.termYears, "years", "termYears");
-    if (basementOn) {
+    if (basementOn && !state.rentalIncomeManuallySet) {
         const rentalDisplayEl = document.getElementById('rentalIncomeDisplay');
         if (rentalDisplayEl) rentalDisplayEl.textContent = '$' + Math.round(state.rentalIncome).toLocaleString();
     }
@@ -1173,6 +1178,7 @@ function toggleBasement() {
         if (monthlyValue) monthlyValue.style.fontWeight = '400';
     } else {
         state.rentalIncome = 0;
+        state.rentalIncomeManuallySet = false;
         btn.textContent = 'With Basement Rental';
         if (basementRows) basementRows.style.display = 'none';
         if (monthlyLabel) monthlyLabel.style.fontWeight = '800';
