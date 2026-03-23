@@ -12,7 +12,8 @@
         }
     </style>
     <title>Calculator</title>
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><polygon points='50,10 90,45 80,45 80,90 60,90 60,65 40,65 40,90 20,90 20,45 10,45' fill='%230b2345'/><rect x='42' y='48' width='16' height='20' fill='%232563eb'/></svg>">
+
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpolygon points='50,10 90,45 80,45 80,90 60,90 60,65 40,65 40,90 20,90 20,45 10,45' fill='%230b2345'/%3E%3Crect x='42' y='48' width='16' height='20' fill='%232563eb'/%3E%3C/svg%3E">
 
     <style>
         /* ============================================================
@@ -216,9 +217,11 @@
         }
         .summary-value {
             font-weight: 800;
+
             width: 90px;
             min-width: 90px;
             max-width: 90px;
+
             display: inline-block;
             outline: none;
             text-align: right;
@@ -229,6 +232,7 @@
                 width: 130px;
                 min-width: 130px;
                 max-width: 130px;
+
             }
         }
         #purchaseBig {
@@ -628,10 +632,13 @@ function calculate(editedField = null) {
         state.hoiManuallySet   = false;
         state.pmiManuallySet   = false;
         initFromHomePrice(state.homePrice);
+        purchase = state.homePrice;
+        PI = state.pi;
+        monthlyPayment = state.desiredPayment;
     }
 
     // If user edited PI specifically, recalculate monthly payment and desired payment
-    if (editedField === 'pi') {
+    else if (editedField === 'pi') {
         PI = state.pi;
         if (PI < 0) PI = 0;
 
@@ -1159,7 +1166,7 @@ calculate();
     document.getElementById('rentalIncomeDisplay').textContent = '$0';
     const total = state.desiredPayment;
     document.getElementById('totalPaymentDisplay').textContent = '$' + Math.round(total).toLocaleString();
-    document.getElementById('yourPaymentDisplay').textContent  = '$' + Math.round(total).toLocaleString();
+    document.getElementById('yourPaymentDisplay').textContent  = '$0';
 })();
 
 
