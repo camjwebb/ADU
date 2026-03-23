@@ -30,10 +30,6 @@
             padding: 0 8px;
             color: #1a1a1a;
             min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
             overflow-y: scroll;
             user-select: none;
         }
@@ -54,9 +50,16 @@
         .container {
             max-width: 420px;
             width: 100%;
+            margin: 0 auto;
             display: flex;
             flex-direction: column;
-            padding: 16px 0;
+            padding-top: 24px;
+        }
+        @media (min-width: 700px) {
+            .container {
+                max-width: 620px;
+                padding-top: 40px;
+            }
         }
 
         /* ============================================================
@@ -72,6 +75,11 @@
         @media (min-width: 420px) {
             h1 {
                 font-size: 26px;
+            }
+        }
+        @media (min-width: 700px) {
+            h1 {
+                font-size: 36px;
             }
         }
         h2 {
@@ -175,6 +183,11 @@
                 padding: 16px;
             }
         }
+        @media (min-width: 700px) {
+            .section-box {
+                padding: 28px 32px;
+            }
+        }
 
         .summary-row {
             display: flex;
@@ -186,6 +199,12 @@
             .summary-row {
                 font-size: 19px;
                 margin: 12px 0;
+            }
+        }
+        @media (min-width: 700px) {
+            .summary-row {
+                font-size: 24px;
+                margin: 16px 0;
             }
         }
         .summary-label {
@@ -204,6 +223,13 @@
             outline: none;
             text-align: right;
             font-family: inherit;
+        }
+        @media (min-width: 700px) {
+            .summary-value {
+                width: 160px;
+                min-width: 160px;
+                max-width: 160px;
+            }
         }
         #purchaseBig {
             text-align: right;
@@ -333,6 +359,11 @@
         @media (min-width: 420px) {
             footer {
                 font-size: 12px;
+            }
+        }
+        @media (min-width: 700px) {
+            footer {
+                font-size: 15px;
             }
         }
 
