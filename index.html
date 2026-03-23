@@ -1,0 +1,1227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        /* Prevent zoom on input focus on mobile */
+        @media screen and (max-width: 420px) {
+            select, textarea, input[type="text"], [contenteditable] {
+                font-size: 16px !important;
+            }
+        }
+    </style>
+    <title>ADU Calculator</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><polygon points='50,10 90,45 80,45 80,90 60,90 60,65 40,65 40,90 20,90 20,45 10,45' fill='%230b2345'/><rect x='42' y='48' width='16' height='20' fill='%232563eb'/></svg>">
+
+    <style>
+        /* ============================================================
+           UNIVERSAL & MOBILE FIRST
+           ============================================================ */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            cursor: auto;
+        }
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            background: #f4f6fb;
+            padding: 0 8px;
+            color: #1a1a1a;
+            min-height: 100vh;
+            overflow-y: scroll;
+            user-select: none;
+        }
+        input {
+            cursor: text;
+            user-select: text;
+        }
+        button {
+            cursor: pointer;
+            user-select: none;
+        }
+        .step {
+            user-select: text;
+        }
+        .section-box {
+            user-select: text;
+        }
+        .container {
+            max-width: 420px;
+            width: 100%;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            padding-top: 24px;
+        }
+        @media (min-width: 700px) {
+            .container {
+                max-width: 620px;
+                padding-top: 40px;
+            }
+        }
+
+        /* ============================================================
+           HEADERS
+           ============================================================ */
+        h1 {
+            font-size: 6vw;
+            font-weight: 800;
+            text-align: center;
+            margin-bottom: 0.5vh;
+            color: #0b2345;
+        }
+        @media (min-width: 420px) {
+            h1 {
+                font-size: 26px;
+            }
+        }
+        @media (min-width: 700px) {
+            h1 {
+                font-size: 36px;
+            }
+        }
+        h2 {
+            font-size: 4.2vw;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+        @media (min-width: 420px) {
+            h2 {
+                font-size: 19px;
+            }
+        }
+        p.sub {
+            color: #6a7485;
+            font-size: 4.2vw;
+            margin-bottom: 12px;
+        }
+        @media (min-width: 420px) {
+            p.sub {
+                font-size: 19px;
+            }
+        }
+
+        /* ============================================================
+           STEP PANELS
+           ============================================================ */
+        .step {
+            background: white;
+            padding: 18px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+            display: none;
+        }
+        .step.active { display: block; }
+
+        /* ============================================================
+           INPUTS
+           ============================================================ */
+        label {
+            font-size: 13px;
+            font-weight: 700;
+            margin-bottom: 4px;
+            display: block;
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 10px 12px;
+            border-radius: 10px;
+            border: 1px solid #d6d9e0;
+            font-size: 16px;
+            font-weight: 800;
+            margin-bottom: 8px;
+        }
+        @media (min-width: 420px) {
+            input[type="text"] {
+                font-size: 18px;
+            }
+        }
+        input[type="text"]::placeholder {
+            color: #9ca3af;
+        }
+        button {
+            width: 100%;
+            padding: 1.5vh;
+            font-size: 4vw;
+            font-weight: 700;
+            border-radius: 10px;
+            border: none;
+            margin-top: 0.5vh;
+            cursor: pointer;
+        }
+        @media (min-width: 420px) {
+            button {
+                padding: 15px;
+                font-size: 18px;
+            }
+        }
+        .btn-primary {
+            background: #2563eb;
+            color: white;
+        }
+        .btn-secondary {
+            background: #f0f2f7;
+            color: #0b2345;
+        }
+
+        /* ============================================================
+           SUMMARY PAGE
+           ============================================================ */
+
+        .section-box {
+            background: white;
+            padding: 2.5vw;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+            margin-top: 0.5vh;
+            overflow-y: auto;
+        }
+        @media (min-width: 420px) {
+            .section-box {
+                padding: 16px;
+            }
+        }
+        @media (min-width: 700px) {
+            .section-box {
+                padding: 28px 32px;
+            }
+        }
+
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 1.2vh 0;
+            font-size: 4.2vw;
+        }
+        @media (min-width: 420px) {
+            .summary-row {
+                font-size: 19px;
+                margin: 12px 0;
+            }
+        }
+        @media (min-width: 700px) {
+            .summary-row {
+                font-size: 24px;
+                margin: 16px 0;
+            }
+        }
+        .summary-label {
+            color: #6a7485;
+        }
+        .summary-top-label {
+            font-weight: 400;
+            color: #6a7485;
+        }
+        .summary-value {
+            font-weight: 800;
+            width: 110px;
+            min-width: 110px;
+            max-width: 110px;
+            display: inline-block;
+            outline: none;
+            text-align: right;
+            font-family: inherit;
+        }
+        @media (min-width: 700px) {
+            .summary-value {
+                width: 160px;
+                min-width: 160px;
+                max-width: 160px;
+            }
+        }
+        #purchaseBig {
+            text-align: right;
+        }
+        .summary-value[data-edit] {
+            font-style: italic;
+        }
+        .editable-box {
+            border: 1.5px solid #d6d9e0;
+            border-radius: 7px;
+            padding: 3px 8px !important;
+            background: #f9fbff;
+        }
+        .editable-box:focus {
+            border-color: #2563eb;
+            outline: none;
+            background: #fff;
+        }
+        @media (hover: hover) and (pointer: fine) {
+            .summary-value[data-edit]:hover {
+                color: #2563eb;
+            }
+        }
+        .summary-value[contenteditable="true"] {
+            border-radius: 4px;
+            padding: 2px 4px;
+        }
+        .summary-value[contenteditable="true"]:focus {
+            outline: none;
+            color: #2563eb;
+        }
+        .summary-row:has(.summary-value[contenteditable="true"]:focus) .summary-label {
+            color: #2563eb;
+        }
+        .summary-value[contenteditable="true"] {
+            -webkit-tap-highlight-color: transparent;
+        }
+        .dropdown-row span:last-child {
+            font-weight: 800;
+            min-width: 80px;
+            max-width: 150px;
+            display: inline-block;
+            outline: none;
+            text-align: right;
+        }
+        .dropdown-row span:last-child {
+            font-style: italic;
+        }
+        @media (hover: hover) and (pointer: fine) {
+            .dropdown-row span:last-child:hover {
+                color: #2563eb;
+            }
+        }
+        .dropdown-row span:last-child[contenteditable="true"] {
+            border-radius: 4px;
+            padding: 2px 4px;
+        }
+        .dropdown-row span:last-child[contenteditable="true"]:focus {
+            outline: none;
+            color: #2563eb;
+        }
+        .dropdown-row:has(span:last-child[contenteditable="true"]:focus) span:first-child {
+            color: #2563eb;
+        }
+        .dropdown-row span:last-child[contenteditable="true"] {
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        hr {
+            border: 0;
+            border-bottom: 1px solid #e1e4ea;
+            margin: 1vh 0;
+        }
+
+        /* Dropdown */
+        .dropdown {
+            margin-top: 0.5vh;
+        }
+        .dropdown button {
+            background: #e9edf5;
+            color: #0b2345;
+            padding: 2vh 2vw;
+            font-size: 3.8vw;
+            -webkit-tap-highlight-color: transparent;
+        }
+        @media (min-width: 420px) {
+            .dropdown button {
+                padding: 12px;
+                font-size: 16px;
+            }
+        }
+        .dropdown-content {
+            display: none;
+            padding: 10px;
+            background: #f9fbff;
+            border-radius: 10px;
+            margin-top: 6px;
+            border: 1px solid #d9dee8;
+        }
+        .dropdown-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 1.2vh 0;
+            font-size: 3.8vw;
+        }
+        @media (min-width: 420px) {
+            .dropdown-row {
+                font-size: 16px;
+                margin: 8px 0;
+            }
+        }
+
+
+        /* Footer */
+        footer {
+            text-align: center;
+            font-size: 2.5vw;
+            margin-top: 0.5vh;
+            color: #6a7485;
+            line-height: 1.4;
+        }
+        footer a {
+            color: #2563eb;
+            text-decoration: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+        @media (min-width: 420px) {
+            footer {
+                font-size: 12px;
+            }
+        }
+        @media (min-width: 700px) {
+            footer {
+                font-size: 15px;
+            }
+        }
+
+
+        /* Refresh Button */
+        .refresh-button {
+            position: absolute;
+            top: -10px;
+            transform: translateY(-50%);
+            left: 0;
+            background: #e9edf5;
+            color: #0b2345;
+            padding: 6px 10px;
+            font-size: 16px;
+            border-radius: 9px;
+            border: none;
+            cursor: pointer;
+            width: auto;
+            min-width: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .refresh-button:hover {
+            background: #d9dee8;
+        }
+
+        /* Big number container for positioning */
+        .big-number-container {
+            position: relative;
+            display: block;
+            width: 100%;
+            min-height: 3px;
+            margin-top: 12px;
+            margin-bottom: 12px;
+        }
+
+
+        /* Section box relative positioning for button */
+        .section-box {
+            position: relative;
+        }
+
+
+    </style>
+</head>
+<body>
+
+<div class="container">
+
+    <h1>ADU Mortgage Calculator</h1>
+
+    <!-- ============================================================
+        SUMMARY PAGE
+        ============================================================ -->
+    <div id="summary" class="step active">
+
+        <!-- Main Summary -->
+        <div class="section-box" style="position: relative;">
+
+            <div style="display: flex; justify-content: flex-end; margin-bottom: 8px;">
+                <button id="basementToggle" onclick="toggleBasement()" style="background: #2563eb; color: white; font-size: 14px; font-weight: 600; padding: 8px 14px; border-radius: 8px; border: none; cursor: pointer; width: auto; white-space: nowrap;">With Basement Rental</button>
+            </div>
+
+            <div class="summary-row">
+                <span class="summary-label summary-top-label" style="font-style: italic;">Home Price</span>
+                <span id="purchaseBig" class="summary-value editable-box" data-edit="homePrice" data-type="currency" style="font-weight: 400;" role="textbox" aria-label="Home Price">$0</span>
+            </div>
+
+            <div class="summary-row">
+                <span class="summary-label" style="font-style: italic;">Down Payment</span>
+                <span id="sumDownDollar" class="summary-value editable-box" data-edit="downPaymentDollar" data-type="currency" style="font-weight: 400;" role="textbox" aria-label="Down Payment">$0</span>
+            </div>
+
+            <div class="summary-row">
+                <span class="summary-label" style="font-style: italic;">Interest Rate</span>
+                <span class="summary-value editable-box" data-edit="interestRate" data-type="percent" style="font-weight: 400;" role="textbox" aria-label="Interest Rate">6</span>
+            </div>
+
+            <div class="summary-row">
+                <span class="summary-label" style="font-style: italic;">Loan Term</span>
+                <span class="summary-value editable-box" data-edit="termYears" data-type="years" style="font-weight: 400;" role="textbox" aria-label="Loan Term in Years">30</span>
+            </div>
+
+            <hr aria-hidden="true">
+
+            <div class="summary-row">
+                <span class="summary-label" style="font-weight: 800; color: #1a1a1a;">Monthly Payment</span>
+                <span id="totalPaymentDisplay" class="summary-value" style="font-style: normal; font-weight: 800; padding: 2px 4px;">$0</span>
+            </div>
+
+            <div id="basementRows" style="display: none;">
+                <div class="summary-row">
+                    <span class="summary-label">Rental Income</span>
+                    <span id="rentalIncomeDisplay" class="summary-value editable-box" data-edit="rentalIncome" data-type="currency" style="font-style: normal; font-weight: 400;" role="textbox" aria-label="Rental Income">$0</span>
+                </div>
+
+                <div class="summary-row">
+                    <span class="summary-label" style="font-weight: 800; color: #1a1a1a;">Your Payment</span>
+                    <span id="yourPaymentDisplay" class="summary-value" style="font-style: normal; font-weight: 800; padding: 2px 4px;">$0</span>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- FOOTER -->
+        <footer role="contentinfo">
+            These numbers are estimates.<br>
+            Ready to make it official? Let's talk.<br>
+            <a href="tel:8014724951">(801) 472 - 4951</a> | <a href="mailto:cameron.webb@houzd.com">cameron.webb@houzd.com</a>
+        </footer>
+
+    </div>
+
+</div>
+
+
+<script>
+/* ============================================================
+   STATE
+   ============================================================ */
+const DEFAULT_HOME_PRICE = 500000;
+let basementOn = false;
+
+let state = {
+    grossIncome: 0,
+    monthlyDebt: 0,
+    desiredPayment: 0,  // Derived from home price on init
+    homePrice: DEFAULT_HOME_PRICE,
+    downPct: 5,
+    downPaymentDollar: 0,
+    interestRate: 6.125,
+    termYears: 30,
+    taxes: 0,
+    hoi: 0,
+    hoa: 0,
+    pmi: 0,
+    rentalIncome: 0,
+    taxesManuallySet: false,
+    hoiManuallySet: false,
+    pmiManuallySet: false,
+    rentalIncomeManuallySet: false
+};
+
+// Seed state from a known home price so the calculator opens with real numbers
+function initFromHomePrice(price) {
+    state.homePrice = price;
+    const downPct = state.downPct / 100;
+    const loan    = price * (1 - downPct);
+    const r       = (state.interestRate / 100) / 12;
+    const n       = state.termYears * 12;
+    let pi = 0;
+    if (r > 0) {
+        pi = loan * (r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1);
+    } else {
+        pi = loan / n;
+    }
+    const taxes = price * 0.005 / 12;
+    const hoi   = 130;  // fixed default
+    const pmi   = state.downPct < 20 ? (loan * 0.0035 / 12) : 0;
+
+    state.taxes            = taxes;
+    if (!state.hoiManuallySet) state.hoi = hoi;
+    state.pmi              = pmi;
+    state.downPaymentDollar = price * downPct;
+    state.desiredPayment   = pi + taxes + (state.hoiManuallySet ? state.hoi : hoi) + pmi + state.hoa;
+    state.pi               = pi;
+}
+
+// Store original values when user first enters calculator
+let originalValues = {
+    income: 0,
+    debt: 0,
+    desiredPayment: 0
+};
+
+/* UTILITIES */
+function parseCurrency(str) { return Number(String(str).replace(/[$, ]/g, '')) || 0; }
+
+// Format input as currency while typing
+function formatCurrencyInput(input) {
+    let value = input.value.replace(/[^0-9]/g, '');
+    if (value) {
+        value = parseInt(value, 10);
+        input.value = "$" + value.toLocaleString();
+    } else {
+        input.value = '';
+    }
+}
+
+// Format editable field based on type
+function formatEditableInput(el, type, key) {
+    let text = el.textContent.replace(/[^0-9.]/g, '');
+    if (!text) {
+        el.textContent = '';
+        return;
+    }
+
+    const numValue = parseFloat(text) || 0;
+
+    if (type === "currency") {
+        el.textContent = "$" + Math.round(numValue).toLocaleString();
+    } else if (type === "percent-whole") {
+        el.textContent = Math.round(numValue) + "%";
+    } else if (type === "percent") {
+        if (key === "downPct") {
+            el.textContent = numValue.toFixed(1) + "%";
+        } else if (key === "interestRate") {
+            el.textContent = numValue.toFixed(3) + "%";
+        } else if (key === "dtiPct") {
+            el.textContent = numValue.toFixed(2) + "%";
+        } else {
+            el.textContent = numValue.toFixed(2) + "%";
+        }
+    } else if (type === "years") {
+        el.textContent = Math.round(numValue) + " years";
+    } else {
+        el.textContent = numValue.toString();
+    }
+}
+
+
+/* ============================================================
+   CALCULATION
+   ============================================================ */
+function calculate(editedField = null) {
+    const g = state.grossIncome;
+    const debt = state.monthlyDebt;
+
+    let monthlyPayment;
+    let PI;
+    let loan = 0;
+    let purchase = 0;
+    let downPayment = 0;
+
+    const r = (state.interestRate / 100) / 12;
+    const n = state.termYears * 12;
+    const down = state.downPct / 100;
+
+    // Determine if PMI should be applied (down payment < 20%)
+    const needsPMI = state.downPct < 20;
+
+    // Mark when user manually edits taxes, HOI, PMI, or rental income
+    if (editedField === 'taxes') {
+        state.taxesManuallySet = true;
+    }
+    if (editedField === 'hoi') {
+        state.hoiManuallySet = true;
+    }
+    if (editedField === 'pmi') {
+        state.pmiManuallySet = true;
+    }
+    if (editedField === 'rentalIncome') {
+        state.rentalIncomeManuallySet = true;
+    }
+
+    // If user edited home price directly, re-seed everything from that price
+    if (editedField === 'homePrice') {
+        state.taxesManuallySet = false;
+        state.hoiManuallySet   = false;
+        state.pmiManuallySet   = false;
+        initFromHomePrice(state.homePrice);
+    }
+
+    // If user edited PI specifically, recalculate monthly payment and desired payment
+    if (editedField === 'pi') {
+        PI = state.pi;
+        if (PI < 0) PI = 0;
+
+        // Calculate loan from PI
+        if (PI > 0 && r > 0) {
+            loan = (PI * (Math.pow(1 + r, n) - 1)) / (r * Math.pow(1 + r, n));
+        } else if (PI > 0) {
+            loan = PI * n;
+        }
+        if (!isFinite(loan) || loan < 0) loan = 0;
+
+        // Calculate purchase price
+        purchase = loan > 0 ? loan / (1 - down) : 0;
+
+        // Recalculate taxes, HOI, and PMI based on new purchase price (unless manually set)
+        if (!state.taxesManuallySet) {
+            state.taxes = purchase * 0.005 / 12;
+        }
+        if (!state.hoiManuallySet) {
+            state.hoi = purchase * 0.0035 / 12;
+        }
+        if (!state.pmiManuallySet) {
+            state.pmi = needsPMI ? (loan * 0.0035 / 12) : 0;
+        }
+
+        // Calculate new total monthly payment
+        monthlyPayment = PI + state.taxes + state.hoi + state.hoa + state.pmi;
+
+        // Update desired payment to match the new monthly payment
+        state.desiredPayment = monthlyPayment;
+    }
+    // If user edited breakdown costs (taxes, hoi, hoa, pmi), keep home price fixed, recalc PI
+    else if (editedField === 'taxes' || editedField === 'hoi' || editedField === 'hoa' || editedField === 'pmi') {
+        purchase = state.homePrice;
+        loan = purchase * (1 - down);
+        if (loan > 0 && r > 0) {
+            PI = loan * (r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1);
+        } else {
+            PI = loan / n;
+        }
+        monthlyPayment = PI + state.taxes + state.hoi + state.hoa + state.pmi;
+        state.desiredPayment = monthlyPayment;
+        state.pi = PI;
+    }
+    // If user edited desired payment — not really used now but keep for safety
+    else if (editedField === 'desiredPayment') {
+        purchase = state.homePrice;
+        loan = purchase * (1 - down);
+        if (loan > 0 && r > 0) {
+            PI = loan * (r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1);
+        } else {
+            PI = loan / n;
+        }
+        monthlyPayment = PI + state.taxes + state.hoi + state.hoa + state.pmi;
+        state.desiredPayment = monthlyPayment;
+        state.pi = PI;
+    }
+    // If user edited downPct, keep home price fixed and recalculate payment
+    else if (editedField === 'downPct') {
+        purchase = state.homePrice;
+        downPayment = purchase * (state.downPct / 100);
+        state.downPaymentDollar = downPayment;
+        loan = Math.max(0, purchase - downPayment);
+
+        const localNeedsPMI = state.downPct < 20;
+
+        if (loan > 0 && r > 0) {
+            PI = loan * (r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1);
+        } else if (loan > 0) {
+            PI = loan / n;
+        } else {
+            PI = 0;
+        }
+
+        if (!state.taxesManuallySet) state.taxes = purchase * 0.005 / 12;
+        if (!state.pmiManuallySet)   state.pmi   = localNeedsPMI ? (loan * 0.0035 / 12) : 0;
+
+        monthlyPayment = PI + state.taxes + state.hoi + state.hoa + state.pmi;
+        state.desiredPayment = monthlyPayment;
+        state.pi = PI;
+    }
+    // If user edited down payment as a dollar amount, keep home price fixed and recalculate
+    else if (editedField === 'downPaymentDollar') {
+        purchase = state.homePrice;
+        downPayment = Math.min(state.downPaymentDollar, purchase);
+        state.downPaymentDollar = downPayment;
+        state.downPct = purchase > 0 ? (downPayment / purchase) * 100 : 0;
+        loan = Math.max(0, purchase - downPayment);
+
+        const localNeedsPMI = state.downPct < 20;
+
+        if (loan > 0 && r > 0) {
+            PI = loan * (r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1);
+        } else if (loan > 0) {
+            PI = loan / n;
+        } else {
+            PI = 0;
+        }
+
+        if (!state.taxesManuallySet) state.taxes = purchase * 0.005 / 12;
+        if (!state.pmiManuallySet)   state.pmi   = localNeedsPMI ? (loan * 0.0035 / 12) : 0;
+
+        monthlyPayment = PI + state.taxes + state.hoi + state.hoa + state.pmi;
+        state.desiredPayment = monthlyPayment;
+        state.pi = PI;
+    }
+    // For all other fields (interestRate, termYears, rentalIncome, null/blur)
+    // keep home price fixed and recalculate forward
+    else {
+        purchase = state.homePrice;
+        loan = purchase * (1 - down);
+        if (!state.taxesManuallySet) state.taxes = purchase * 0.005 / 12;
+        if (!state.pmiManuallySet)   state.pmi   = needsPMI ? (loan * 0.0035 / 12) : 0;
+        if (loan > 0 && r > 0) {
+            PI = loan * (r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1);
+        } else {
+            PI = loan / n;
+        }
+        monthlyPayment = PI + state.taxes + state.hoi + state.hoa + state.pmi;
+        state.desiredPayment = monthlyPayment;
+        state.pi = PI;
+    }
+
+    // Store PI in state for reference
+    state.pi = PI;
+
+    // Calculate down payment from purchase price (purchase already calculated in branches above)
+    // Unless user edited downPct or downPaymentDollar directly (already handled in their branches)
+    if (editedField !== 'downPct' && editedField !== 'downPaymentDollar') {
+        downPayment = purchase * down;
+        state.downPaymentDollar = downPayment;
+    }
+
+    // Sync homePrice in state with the computed purchase price
+    if (editedField !== 'homePrice') {
+        state.homePrice = purchase;
+    }
+
+    // If basement toggle is on and user hasn't manually set rental income, keep it at 40%
+    if (basementOn && !state.rentalIncomeManuallySet) {
+        state.rentalIncome = Math.round(monthlyPayment * 0.40);
+        const rentalEl = document.getElementById('rentalIncomeDisplay');
+        if (rentalEl && document.activeElement !== rentalEl) {
+            rentalEl.textContent = '$' + Math.round(state.rentalIncome).toLocaleString();
+        }
+    }
+
+    // Display
+    const yourPayment = Math.max(0, monthlyPayment - state.rentalIncome);
+    updateEditableValue('[data-edit="homePrice"]', purchase, "currency", "homePrice");
+
+    // Update total / rental / your payment displays
+    const totalPaymentEl = document.getElementById('totalPaymentDisplay');
+    if (totalPaymentEl) totalPaymentEl.textContent = "$" + Math.round(monthlyPayment).toLocaleString();
+    const yourPaymentEl = document.getElementById('yourPaymentDisplay');
+    if (yourPaymentEl) yourPaymentEl.textContent = "$" + Math.round(yourPayment).toLocaleString();
+
+    // Update editable fields if not currently editing them
+    updateEditableValue('[data-edit="downPaymentDollar"]', state.downPaymentDollar, "currency", "downPaymentDollar");
+    updateEditableValue('[data-edit="interestRate"]', state.interestRate, "percent", "interestRate");
+    updateEditableValue('[data-edit="termYears"]', state.termYears, "years", "termYears");
+    if (basementOn && !state.rentalIncomeManuallySet) {
+        const rentalDisplayEl = document.getElementById('rentalIncomeDisplay');
+        if (rentalDisplayEl) rentalDisplayEl.textContent = '$' + Math.round(state.rentalIncome).toLocaleString();
+    }
+
+}
+
+// Helper function to update editable values without disrupting editing
+function updateEditableValue(selector, value, type, key) {
+    const el = document.querySelector(selector);
+    if (el && document.activeElement !== el) {
+        if (type === "currency") {
+            el.textContent = "$" + Math.round(value).toLocaleString();
+        } else if (type === "percent-whole") {
+            el.textContent = Math.round(value) + "%";
+        } else if (type === "percent") {
+            if (key === "downPct") {
+                el.textContent = parseFloat(value).toFixed(1) + "%";
+            } else if (key === "interestRate") {
+                el.textContent = parseFloat(value).toFixed(3) + "%";
+            } else if (key === "dtiPct") {
+                el.textContent = parseFloat(value).toFixed(2) + "%";
+            } else {
+                el.textContent = parseFloat(value).toFixed(2) + "%";
+            }
+        } else if (type === "years") {
+            el.textContent = Math.round(value) + " years";
+        }
+    }
+}
+
+/* ============================================================
+   INLINE EDITING
+   ============================================================ */
+function setupEditableFields() {
+    document.querySelectorAll("[data-edit]").forEach(el => {
+        if (el.hasAttribute('data-setup')) return;
+        el.setAttribute('data-setup', 'true');
+        el.setAttribute("contenteditable", "true");
+        el.setAttribute("inputmode", "decimal");
+
+        const key = el.dataset.edit;
+        const type = el.dataset.type || "currency";
+        let originalValue = parseFloat(el.textContent.replace(/[^0-9.-]+/g, "")) || 0;
+        
+        el.addEventListener("focus", function() {
+            originalValue = parseFloat(this.textContent.replace(/[^0-9.-]+/g, "")) || 0;
+            let text = this.textContent.replace(/[^0-9.]/g, '');
+            let formattedText = '';
+
+            if (type === "percent-whole") {
+                const numValue = parseFloat(text) || 0;
+                formattedText = Math.round(numValue) + "%";
+            } else if (type === "percent") {
+                const numValue = parseFloat(text) || 0;
+                if (key === "downPct") {
+                    formattedText = numValue.toFixed(1) + "%";
+                } else if (key === "interestRate") {
+                    formattedText = numValue.toFixed(3) + "%";
+                } else if (key === "dtiPct") {
+                    formattedText = numValue.toFixed(2) + "%";
+                } else {
+                    formattedText = numValue.toString() + "%";
+                }
+            } else if (type === "currency") {
+                const numValue = parseFloat(text) || 0;
+                formattedText = "$" + numValue.toString();
+            } else if (type === "years") {
+                const numValue = parseFloat(text) || 0;
+                formattedText = numValue.toString() + " years";
+            } else {
+                const numValue = parseFloat(text) || 0;
+                formattedText = numValue.toString();
+            }
+
+            this.textContent = formattedText;
+
+            setTimeout(() => {
+                const range = document.createRange();
+                const sel = window.getSelection();
+                const textNode = this.firstChild;
+                if (textNode) {
+                    // Position cursor after prefix ($ sign) or at start
+                    const startPos = type === "currency" ? 1 : 0;
+                    range.setStart(textNode, startPos);
+
+                    // Select to before suffix (%, years) or end
+                    let endPos = formattedText.length;
+                    if (type === "percent" || type === "percent-whole") {
+                        endPos = formattedText.indexOf('%');
+                    } else if (type === "years") {
+                        endPos = formattedText.indexOf(' years');
+                    }
+                    range.setEnd(textNode, endPos);
+
+                    sel.removeAllRanges();
+                    sel.addRange(range);
+                }
+            }, 0);
+        });
+        
+        el.addEventListener("input", function(e) {
+            let text = this.textContent;
+            let cleaned = text.replace(/[^0-9.]/g, '');
+            const parts = cleaned.split('.');
+            let finalText = '';
+
+            if (parts.length === 0) {
+                finalText = '';
+            } else if (parts.length === 1) {
+                finalText = parts[0] || '';
+                if (text.trim().replace(/[^0-9.]/g, '').endsWith('.')) {
+                    finalText += '.';
+                }
+            } else {
+                finalText = parts[0] || '';
+                let decimals = parts.slice(1).join('');
+
+                if (key === "downPct") {
+                    if (decimals.length > 1) decimals = decimals.substring(0, 1);
+                } else if (key === "interestRate") {
+                    if (decimals.length > 3) decimals = decimals.substring(0, 3);
+                } else if (key === "dtiPct") {
+                    if (decimals.length > 2) decimals = decimals.substring(0, 2);
+                }
+
+                finalText += '.' + decimals;
+            }
+
+            // Apply digit limits based on field type
+            const integerPart = finalText.split('.')[0];
+            const decimalPart = finalText.includes('.') ? finalText.split('.')[1] : '';
+
+            // Define max digits for each field (total including integer and decimal)
+            let maxIntegerDigits = 5; // default
+            let maxDecimalDigits = 0;
+
+            if (key === "pi") {
+                maxIntegerDigits = 5; // max 99,999
+            } else if (key === "taxes") {
+                maxIntegerDigits = 4; // max 9,999
+            } else if (key === "hoi") {
+                maxIntegerDigits = 4; // max 9,999
+            } else if (key === "hoa") {
+                maxIntegerDigits = 4; // max 9,999
+            } else if (key === "pmi") {
+                maxIntegerDigits = 4; // max 9,999
+            } else if (key === "downPct") {
+                maxIntegerDigits = 3; // max 100%
+                maxDecimalDigits = 1;
+            } else if (key === "interestRate") {
+                maxIntegerDigits = 2; // max 99.999%
+                maxDecimalDigits = 3;
+            } else if (key === "termYears") {
+                maxIntegerDigits = 3; // max 999 years
+            } else if (key === "grossIncome") {
+                maxIntegerDigits = 5; // max 99,999
+            } else if (key === "monthlyDebt") {
+                maxIntegerDigits = 5; // max 99,999
+            } else if (key === "downPaymentDollar") {
+                maxIntegerDigits = 7; // max 9,999,999
+            } else if (key === "dtiPct") {
+                maxIntegerDigits = 2; // max 99.99%
+                maxDecimalDigits = 2;
+            } else if (key === "desiredPayment") {
+                maxIntegerDigits = 5; // max 99,999
+            } else if (key === "homePrice") {
+                maxIntegerDigits = 7; // max 9,999,999
+            } else if (key === "rentalIncome") {
+                maxIntegerDigits = 5; // max 99,999
+            }
+
+            // Limit integer part
+            let limitedInteger = integerPart.substring(0, maxIntegerDigits);
+
+            // Reconstruct finalText with limits
+            if (decimalPart && maxDecimalDigits > 0) {
+                finalText = limitedInteger + '.' + decimalPart.substring(0, maxDecimalDigits);
+            } else if (finalText.includes('.') && maxDecimalDigits > 0) {
+                finalText = limitedInteger + '.';
+            } else {
+                finalText = limitedInteger;
+            }
+
+            // Add suffix/prefix based on type
+            if (type === "currency") {
+                finalText = "$" + finalText;
+            } else if (type === "percent" || type === "percent-whole") {
+                finalText = finalText + "%";
+            } else if (type === "years") {
+                finalText = finalText + " years";
+            }
+
+            if (finalText !== text) {
+                const sel = window.getSelection();
+                let cursorPos = finalText.length;
+                if (sel.rangeCount > 0) {
+                    try {
+                        const range = sel.getRangeAt(0);
+                        if (range.startContainer === this || range.startContainer.parentNode === this) {
+                            cursorPos = range.startOffset;
+
+                            // Adjust cursor position based on where numbers are
+                            const numStart = type === "currency" ? 1 : 0;
+                            const oldCleaned = text.replace(/[^0-9.]/g, '');
+                            const newCleaned = finalText.replace(/[^0-9.]/g, '');
+
+                            if (oldCleaned.includes('.') !== newCleaned.includes('.')) {
+                                cursorPos = numStart + newCleaned.indexOf('.') + 1;
+                            } else {
+                                // Keep cursor in number portion
+                                cursorPos = Math.max(numStart, Math.min(cursorPos, numStart + newCleaned.length));
+                            }
+                        }
+                    } catch(e) {}
+                }
+
+                this.textContent = finalText;
+
+                setTimeout(() => {
+                    try {
+                        const range = document.createRange();
+                        const sel2 = window.getSelection();
+                        const textNode = this.firstChild || this;
+                        if (textNode) {
+                            const pos = Math.min(cursorPos, finalText.length);
+                            range.setStart(textNode, pos);
+                            range.setEnd(textNode, pos);
+                            sel2.removeAllRanges();
+                            sel2.addRange(range);
+                        }
+                    } catch(e) {
+                        const range = document.createRange();
+                        const sel2 = window.getSelection();
+                        range.selectNodeContents(this);
+                        range.collapse(false);
+                        sel2.removeAllRanges();
+                        sel2.addRange(range);
+                    }
+                }, 0);
+            }
+        });
+        
+        let isEnterPressed = false;
+
+        el.addEventListener("blur", function() {
+            // Only process blur if it wasn't triggered by Enter key
+            if (!isEnterPressed) {
+                finishEditing(this, key, type);
+            }
+            isEnterPressed = false;
+        });
+
+        el.addEventListener("keydown", function(e) {
+            if (e.key === "Enter") {
+                e.preventDefault();
+                isEnterPressed = true;
+
+                // Process the edit
+                let text = this.textContent.replace(/[^0-9.-]+/g, "");
+                let numValue = parseFloat(text) || 0;
+
+                // Prevent negative numbers
+                if (numValue < 0) numValue = 0;
+
+                // Apply max limits
+                if (key === "pi" && numValue > 99999) numValue = 99999;
+                else if (key === "taxes" && numValue > 9999) numValue = 9999;
+                else if (key === "hoi" && numValue > 9999) numValue = 9999;
+                else if (key === "hoa" && numValue > 9999) numValue = 9999;
+                else if (key === "pmi" && numValue > 9999) numValue = 9999;
+                else if (key === "downPct" && numValue > 100) numValue = 100;
+                else if (key === "interestRate" && numValue > 20.0) numValue = 20.0;
+                else if (key === "termYears" && numValue > 50) numValue = 50;
+                else if (key === "grossIncome" && numValue > 99999) numValue = 99999;
+                else if (key === "monthlyDebt" && numValue > 99999) numValue = 99999;
+                else if (key === "downPaymentDollar" && numValue > 9999999) numValue = 9999999;
+                else if (key === "desiredPayment") {
+                    if (numValue > 99999) numValue = 99999;
+                } else if (key === "homePrice") {
+                    if (numValue > 9999999) numValue = 9999999;
+                } else if (key === "rentalIncome") {
+                    if (numValue > 99999) numValue = 99999;
+                }
+
+                state[key] = numValue;
+                calculate(key);
+                formatEditableInput(this, type, key);
+
+                // Blur to remove focus
+                this.blur();
+
+                // Force focus to body to ensure no element retains focus
+                document.body.focus();
+
+            } else if (e.key === "Escape") {
+                e.preventDefault();
+                this.textContent = originalValue.toString();
+                this.blur();
+            }
+        });
+    });
+}
+
+function finishEditing(el, key, type) {
+    let text = el.textContent.replace(/[^0-9.-]+/g, "");
+    let numValue = parseFloat(text) || 0;
+
+    // Prevent negative numbers
+    if (numValue < 0) {
+        numValue = 0;
+    }
+
+    // Apply max limits
+    if (key === "pi" && numValue > 99999) numValue = 99999;
+    else if (key === "taxes" && numValue > 9999) numValue = 9999;
+    else if (key === "hoi" && numValue > 9999) numValue = 9999;
+    else if (key === "hoa" && numValue > 9999) numValue = 9999;
+    else if (key === "pmi" && numValue > 9999) numValue = 9999;
+    else if (key === "downPct" && numValue > 100) numValue = 100;
+    else if (key === "interestRate" && numValue > 20.0) numValue = 20.0;
+    else if (key === "termYears" && numValue > 50) numValue = 50;
+    else if (key === "grossIncome" && numValue > 99999) numValue = 99999;
+    else if (key === "monthlyDebt" && numValue > 99999) numValue = 99999;
+    else if (key === "downPaymentDollar" && numValue > 9999999) numValue = 9999999;
+    else if (key === "desiredPayment") {
+        if (numValue > 99999) numValue = 99999;
+    } else if (key === "homePrice") {
+        if (numValue > 9999999) numValue = 9999999;
+    } else if (key === "rentalIncome") {
+        if (numValue > 99999) numValue = 99999;
+    }
+
+    state[key] = numValue;
+
+    // Recalculate based on what was edited
+    calculate(key);
+
+    formatEditableInput(el, type, key);
+
+    // Blur the element and move focus to body to clear the blue outline
+    el.blur();
+
+    // Force focus to body to ensure no element retains focus
+    document.body.focus();
+}
+
+// Setup editable fields on page load
+setupEditableFields();
+
+/* ============================================================
+   INIT — seed from $500k home price and go straight to summary
+   ============================================================ */
+initFromHomePrice(DEFAULT_HOME_PRICE);
+calculate();
+
+// Force-write all initial values directly — bypasses active-element guard
+(function applyInitialDisplay() {
+    const p = DEFAULT_HOME_PRICE;
+    document.querySelector('[data-edit="homePrice"]').textContent        = '$' + Math.round(p).toLocaleString();
+    document.querySelector('[data-edit="downPaymentDollar"]').textContent = '$' + Math.round(state.downPaymentDollar).toLocaleString();
+    document.querySelector('[data-edit="interestRate"]').textContent      = state.interestRate.toFixed(3) + '%';
+    document.querySelector('[data-edit="termYears"]').textContent         = state.termYears + ' years';
+    document.getElementById('rentalIncomeDisplay').textContent = '$0';
+    const total = state.desiredPayment;
+    document.getElementById('totalPaymentDisplay').textContent = '$' + Math.round(total).toLocaleString();
+    document.getElementById('yourPaymentDisplay').textContent  = '$' + Math.round(total).toLocaleString();
+})();
+
+
+// Allow clicking anywhere to blur/submit editable fields
+document.addEventListener('mousedown', function(e) {
+    // Allow clicking on inputs, buttons, and contenteditable elements
+    if (e.target.hasAttribute('contenteditable') ||
+        e.target.tagName === 'INPUT' ||
+        e.target.tagName === 'BUTTON') {
+        return;
+    }
+
+    // If user clicks anywhere else, blur the active element if it's contenteditable
+    if (document.activeElement && document.activeElement.hasAttribute('contenteditable')) {
+        document.activeElement.blur();
+    }
+});
+
+// Re-setup after calculate() updates the DOM
+const originalCalculate = calculate;
+calculate = function(editedField) {
+    originalCalculate(editedField);
+    setTimeout(() => {
+        document.querySelectorAll("[data-edit]").forEach(el => {
+            if (!el.hasAttribute('data-setup')) {
+                setupEditableFields();
+            }
+        });
+    }, 10);
+};
+
+/* ============================================================
+   BASEMENT RENTAL TOGGLE
+   ============================================================ */
+function toggleBasement() {
+    basementOn = !basementOn;
+    const btn = document.getElementById('basementToggle');
+    const basementRows = document.getElementById('basementRows');
+    const monthlyLabel = document.querySelector('#totalPaymentDisplay').previousElementSibling;
+    const monthlyValue = document.getElementById('totalPaymentDisplay');
+    if (basementOn) {
+        state.rentalIncome = Math.round(state.desiredPayment * 0.40);
+        btn.textContent = 'Without Basement Rental';
+        if (basementRows) basementRows.style.display = 'block';
+        if (monthlyLabel) monthlyLabel.style.fontWeight = '400';
+        if (monthlyLabel) monthlyLabel.style.color = '';
+        if (monthlyValue) monthlyValue.style.fontWeight = '400';
+    } else {
+        state.rentalIncome = 0;
+        state.rentalIncomeManuallySet = false;
+        btn.textContent = 'With Basement Rental';
+        if (basementRows) basementRows.style.display = 'none';
+        if (monthlyLabel) monthlyLabel.style.fontWeight = '800';
+        if (monthlyLabel) monthlyLabel.style.color = '#1a1a1a';
+        if (monthlyValue) monthlyValue.style.fontWeight = '800';
+    }
+    document.getElementById('rentalIncomeDisplay').textContent = '$' + Math.round(state.rentalIncome).toLocaleString();
+    const yourPayment = Math.max(0, state.desiredPayment - state.rentalIncome);
+    document.getElementById('yourPaymentDisplay').textContent = '$' + Math.round(yourPayment).toLocaleString();
+}
+
+</script>
+
+</body>
+</html>
