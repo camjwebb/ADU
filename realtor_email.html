@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>ADU Income Calculator – Houzd</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap');
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #eef1f8;
+      font-family: 'Inter', Arial, sans-serif;
+      padding: 40px 16px 60px;
+      color: #1a1a2e;
+    }
+    .email-wrapper { max-width: 580px; margin: 0 auto; }
+
+    .logo-bar {
+      background: #0b2345;
+      border-radius: 14px 14px 0 0;
+      padding: 20px 32px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .logo-text { font-size: 21px; font-weight: 900; color: #fff; letter-spacing: -0.5px; }
+    .logo-text span { color: #4a9eff; }
+
+    .hero {
+      background: linear-gradient(135deg, #0b2345 0%, #163a6e 100%);
+      padding: 40px 36px 36px;
+      text-align: center;
+    }
+    .hero h1 {
+      font-size: 28px;
+      font-weight: 900;
+      color: #fff;
+      line-height: 1.2;
+      margin-bottom: 12px;
+      letter-spacing: -0.5px;
+    }
+    .hero h1 em { font-style: normal; color: #4a9eff; }
+    .hero p { font-size: 15px; color: #b8cce4; line-height: 1.6; max-width: 420px; margin: 0 auto; }
+
+    .body-section {
+      background: #fff;
+      padding: 36px 36px 32px;
+    }
+    .personal-note {
+      font-size: 15.5px;
+      color: #374151;
+      line-height: 1.7;
+      margin-bottom: 28px;
+    }
+    .personal-note strong { color: #0b2345; }
+
+    .qr-row {
+      display: flex;
+      gap: 28px;
+      align-items: center;
+      background: #f7f9fc;
+      border-radius: 14px;
+      padding: 24px;
+      border: 1px solid #e4e9f2;
+    }
+    .qr-img {
+      width: 140px;
+      height: 140px;
+      border-radius: 10px;
+      flex-shrink: 0;
+      display: block;
+    }
+    .qr-right h3 {
+      font-size: 15px;
+      font-weight: 800;
+      color: #0b2345;
+      margin-bottom: 8px;
+    }
+    .qr-right p {
+      font-size: 13.5px;
+      color: #6b7a8d;
+      line-height: 1.6;
+    }
+    .qr-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: #8a97aa;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      text-align: center;
+      margin-top: 8px;
+    }
+
+    .bullets {
+      margin: 28px 0 0;
+      padding: 0;
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .bullets li {
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+      font-size: 14px;
+      color: #374151;
+      line-height: 1.55;
+    }
+    .bullet-dot {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: #0b2345;
+      color: #fff;
+      font-size: 11px;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    .footer-bar {
+      background: #0b2345;
+      border-radius: 0 0 14px 14px;
+      padding: 22px 36px;
+      text-align: center;
+      font-size: 13px;
+      color: rgba(255,255,255,0.55);
+    }
+    .footer-bar strong { color: #fff; }
+  </style>
+</head>
+<body>
+<div class="email-wrapper">
+
+  <div class="logo-bar">
+    <svg width="36" height="36" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <polygon points="50,8 92,45 80,45 80,92 60,92 60,66 40,66 40,92 20,92 20,45 8,45" fill="#ffffff"/>
+      <rect x="42" y="50" width="16" height="20" fill="#4a9eff"/>
+    </svg>
+    <div class="logo-text">Hou<span>zd</span></div>
+  </div>
+
+  <div class="hero">
+    <h1>Show your clients the<br><em>rental income hiding</em> in their next home</h1>
+    <p>An ADU or basement suite can offset hundreds of dollars off a monthly mortgage. Here's a tool that shows the exact numbers — instantly.</p>
+  </div>
+
+  <div class="body-section">
+    <p class="personal-note">
+      I wanted to share something I think you'll find useful with buyers who are on the fence. When a property has a basement apartment, in-law suite, or ADU, <strong>most people have no idea what it's actually worth in monthly rental income</strong> — and that number can change everything.
+      <br><br>
+      Scan the QR code below and try it yourself. Takes about 60 seconds.
+    </p>
+
+    <div class="qr-row">
+      <div>
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAXIAAAFyCAIAAABnRsZeAAAHIUlEQVR4nO3cO25rNwBFUTt4pYeRsWTQGUuGoV5pU90i3Hz8aK3esnRlbNDAAb/f7/cXQOeP8LUAZAXoOa0AMVkBYrICxGQFiMkKEJMVICYrQExWgJisADFZAWKyAsRkBYjJChCTFSAmK0BMVoCYrAAxWQFisgLEZAWIyQoQkxUgJitATFaAmKwAMVkBYrICxGQFiMkKEJMVICYrQExWgJisADFZAWKyAsRkBYjJChD79bXIz59/fd3l9c/f//vzPv/ss3mvPPJ75z2rEat+7yrzvv1nTitATFaAmKwAMVkBYrICxGQFiMkKEJMVICYrwC0r2z3Xgc/mrTBHlrLz1r3zdrTzfnaePd/Vz5bLYKcVICYrQExWgJisADFZAWKyAsRkBYjJCiArwN42Xdk+W3XX6bxXHvlEq352lVXb3/v+JufxTxAQkxUgJitATFaAmKwAMVkBYrICxGQFiMkKEDtyZXuiVVvYVRvNVavTE3fD93FaAWKyAsRkBYjJChCTFSAmK0BMVoCYrAAxWQFiVra/ycjadd5y9PmVR97zqltjT7z59T5OK0BMVoCYrAAxWQFisgLEZAWIyQoQkxUgJitA7MiV7actKUdubx3ZpM7bs9534+yn/U0+c1oBYrICxGQFiMkKEJMVICYrQExWgJisADFZAT5jZXvfCnPV2nXVk9zz81oG/x5OK0BMVoCYrAAxWQFisgLEZAWIyQoQkxUgJivALStbd39Wz2rPDe6qLewIf5MVpxUgJitATFaAmKwAMVkBYrICxGQFkBVgb04rwC0r21Xb0D1Xp8/23KQ+G3mSI593z+f8s+Vf+zxOK0BMVoCYrAAxWQFisgLEZAWIyQoQkxUgJitA7Pv9fn+tMG/POmLeKnHPZfC85eieTtxYn7jAdloBYrICxGQFiMkKEJMVICYrQExWgJisADFZAW65y3bPNeSqneWeG9xV72re9nfVnbLPTryt9pnTChCTFSAmK0BMVoCYrAAxWQFisgLEZAWIyQoQO/Iu20+723XV+nPEnk9y1Xt+ucsWYIR/goCYrAAxWQFisgLEZAWIyQoQkxUgJivALSvbEfftSkes2nc+23Pr/GlPYxWnFSAmK0BMVoCYrAAxWQFisgLEZAWIyQoQkxXgM1a2J95muudNtyduUle95z3vox2x6ht0WgFisgLEZAWIyQoQkxUgJiuArAB7c1oBYrIC3LKyXbUs3HPReOK72vPzrrLn03hZ2QJ38E8QEJMVICYrQExWgJisADFZAWKyAsRkBYh93F22q24kPXHtOrJX3vMe3BF73nT72vI5O60AMVkBYrICxGQFiMkKEJMVICYrQExWgJisALFfX1tatR3c847Vebfzjjzn+76jVffRvrZcyo5wWgFisgLEZAWIyQoQkxUgJitATFaAmKwAMVkBPmNlu2rt+mnL0RPvZ93zE428q58tt90jnFaAmKwAMVkBYrICxGQFiMkKEJMVICYrQExWgFtWtiNryFWrxBO3sKtWp3ua9zR8R//ltALEZAWIyQoQkxUgJitATFaAmKwAMVkBYrIC3LKyXbXvXLVJHVnojvzeVffRrnrlE7+j+zitADFZAWKyAsRkBYjJCiArwN6cVoCYrAAxWQFuWdmuuhn0vjtHT/xE8+4qvu+e4xM5rQAxWQFisgLEZAWIyQoQkxUgJitATFaAmKwAse/3+12/JhvtWVetP+fdKbvnbnjPle1r0fLbaQWIyQoQkxUgJitATFaAmKwAMVkBYrICxGQFuOUu2z1XiSNWLThX3Tg77/udd9Ptic/5Z8sblJ85rQAxWQFisgLEZAWIyQoQkxUgJitATFaAmKwAt6xsn+25HVy17xz52RO3v/Pusj3xr+5ETitATFaAmKwAMVkBYrICxGQFiMkKEJMVICYrwGesbFetXU+8r/T5Z+e98p536O55g/Jr0be/ajfstALEZAWIyQoQkxUgJitATFaAmKwAMVkBYrICxI5c2Z5o3hpy3t2uz/bchq7as574rOZxWgFisgLEZAWIyQogK8DenFaAmKwAMVkBYrICxKxstzCy4HzeWe654LzvbteRV/458PM+c1oBYrICxGQFiMkKEJMVICYrQExWgJisADFZAWJHrmz3vL9zzxtn93xXq77BVZvUn+t2tM+cVoCYrAAxWQFisgLEZAWIyQoQkxUgJitATFaAz1jZrlqdznPiJ5p3P6tV8d2cVoCYrAAxWQFisgLEZAWIyQoQkxUgJitATFaA2Pf7/a5fE/hoTitATFaAmKwAMVkBYrICxGQFiMkKEJMVICYrQExWgJisADFZAWKyAsRkBYjJChCTFSAmK0BMVoCYrAAxWQFisgLEZAWIyQoQkxUgJitATFaAmKwAMVkBYrICxGQFiMkKEJMVICYrQExWgJisADFZAWKyAsRkBYjJCvDV+hcEaDOVs/ltKAAAAABJRU5ErkJggg==" alt="Houzd ADU Calculator QR Code" />
+        <div class="qr-label">📱 Scan to open</div>
+      </div>
+      <div class="qr-right">
+        <h3>Houzd ADU Income Calculator</h3>
+        <p>Enter a few details about the property and get an instant projection of potential rental income — no app, no account needed.</p>
+      </div>
+    </div>
+
+    <ul class="bullets">
+      <li>
+        <div class="bullet-dot">✓</div>
+        Works for basements, detached ADUs, garage conversions, and in-law suites
+      </li>
+      <li>
+        <div class="bullet-dot">✓</div>
+        Shows how rental income offsets the monthly mortgage — a number buyers actually care about
+      </li>
+      <li>
+        <div class="bullet-dot">✓</div>
+        Simple enough to share with a spouse, parent, or lender on the spot
+      </li>
+    </ul>
+  </div>
+
+  <div class="footer-bar">
+    <strong>Tony @ Houzd</strong> &nbsp;·&nbsp; anthony.vandyke@houzd.com &nbsp;·&nbsp; houzd.com
+  </div>
+
+</div>
+</body>
+</html>
