@@ -435,8 +435,9 @@
         <!-- Main Summary -->
         <div class="section-box" style="position: relative;">
 
+            <p style="text-align: center; font-style: italic; color: #6a7485; margin-bottom: 10px; font-size: 14px;">Tap any number to adjust the monthly payment.</p>
             <div style="display: flex; justify-content: flex-end; margin-bottom: 8px;">
-                <button id="basementToggle" onclick="toggleBasement()" style="background: #2563eb; color: white; font-size: 17px; font-weight: 600; padding: 8px 16px; border-radius: 8px; border: none; cursor: pointer; width: auto; white-space: nowrap;">With Basement Rental</button>
+                <button id="basementToggle" onclick="toggleBasement()" style="background: #2563eb; color: white; font-size: 17px; font-weight: 600; padding: 8px 16px; border-radius: 8px; border: none; cursor: pointer; width: auto; white-space: nowrap;">Add Rental Income</button>
             </div>
 
             <div class="summary-row">
@@ -472,8 +473,8 @@
                     <span id="rentalIncomeDisplay" class="summary-value editable-box" data-edit="rentalIncome" data-type="currency" style="font-style: normal; font-weight: 400;" role="textbox" aria-label="Rental Income">$0</span>
                 </div>
 
-                <div class="summary-row">
-                    <span class="summary-label" style="font-weight: 800; color: #1a1a1a;">Your Payment</span>
+                <div class="summary-row" style="align-items: baseline;">
+                    <span style="font-weight: 800; color: #1a1a1a; font-size: inherit;">Your Payment<br><span style="font-weight: 400; font-size: 0.72em; color: #6a7485; padding-left: 16px;">after rental income</span></span>
                     <span id="yourPaymentDisplay" class="summary-value" style="font-style: normal; font-weight: 800; padding: 2px 4px;">$0</span>
                 </div>
             </div>
@@ -483,7 +484,7 @@
         <!-- FOOTER -->
         <footer role="contentinfo">
             These numbers are estimates.<br>
-            Ready to make it official? Let's talk.<br>
+            Questions? I'll walk you through it.<br>
             <a href="tel:8014724951">(801) 472 - 4951</a> | <a href="mailto:cameron.webb@houzd.com">cameron.webb@houzd.com</a>
         </footer>
 
@@ -506,7 +507,7 @@ let state = {
     homePrice: DEFAULT_HOME_PRICE,
     downPct: 5,
     downPaymentDollar: 0,
-    interestRate: 6.125,
+    interestRate: 6.1,
     termYears: 30,
     taxes: 0,
     hoi: 0,
@@ -583,7 +584,7 @@ function formatEditableInput(el, type, key) {
         if (key === "downPct") {
             el.textContent = numValue.toFixed(1) + "%";
         } else if (key === "interestRate") {
-            el.textContent = numValue.toFixed(3) + "%";
+            el.textContent = numValue.toFixed(1) + "%";
         } else if (key === "dtiPct") {
             el.textContent = numValue.toFixed(2) + "%";
         } else {
@@ -824,7 +825,7 @@ function updateEditableValue(selector, value, type, key) {
             if (key === "downPct") {
                 el.textContent = parseFloat(value).toFixed(1) + "%";
             } else if (key === "interestRate") {
-                el.textContent = parseFloat(value).toFixed(3) + "%";
+                el.textContent = parseFloat(value).toFixed(1) + "%";
             } else if (key === "dtiPct") {
                 el.textContent = parseFloat(value).toFixed(2) + "%";
             } else {
@@ -863,7 +864,7 @@ function setupEditableFields() {
                 if (key === "downPct") {
                     formattedText = numValue.toFixed(1) + "%";
                 } else if (key === "interestRate") {
-                    formattedText = numValue.toFixed(3) + "%";
+                    formattedText = numValue.toFixed(1) + "%";
                 } else if (key === "dtiPct") {
                     formattedText = numValue.toFixed(2) + "%";
                 } else {
@@ -1166,7 +1167,7 @@ calculate();
     const p = DEFAULT_HOME_PRICE;
     document.querySelector('[data-edit="homePrice"]').textContent        = '$' + Math.round(p).toLocaleString();
     document.querySelector('[data-edit="downPaymentDollar"]').textContent = '$' + Math.round(state.downPaymentDollar).toLocaleString();
-    document.querySelector('[data-edit="interestRate"]').textContent      = state.interestRate.toFixed(3) + '%';
+    document.querySelector('[data-edit="interestRate"]').textContent      = state.interestRate.toFixed(1) + '%';
     document.querySelector('[data-edit="termYears"]').textContent         = state.termYears + ' years';
     document.getElementById('rentalIncomeDisplay').textContent = '$0';
     const total = state.desiredPayment;
@@ -1214,7 +1215,7 @@ function toggleBasement() {
     const monthlyValue = document.getElementById('totalPaymentDisplay');
     if (basementOn) {
         state.rentalIncome = Math.round(state.desiredPayment * 0.40);
-        btn.textContent = 'Without Basement Rental';
+        btn.textContent = 'Remove Rental Income';
         if (basementRows) basementRows.style.display = 'block';
         if (monthlyLabel) monthlyLabel.style.fontWeight = '400';
         if (monthlyLabel) monthlyLabel.style.color = '';
@@ -1222,7 +1223,7 @@ function toggleBasement() {
     } else {
         state.rentalIncome = 0;
         state.rentalIncomeManuallySet = false;
-        btn.textContent = 'With Basement Rental';
+        btn.textContent = 'Add Rental Income';
         if (basementRows) basementRows.style.display = 'none';
         if (monthlyLabel) monthlyLabel.style.fontWeight = '800';
         if (monthlyLabel) monthlyLabel.style.color = '#1a1a1a';
