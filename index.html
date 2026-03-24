@@ -31,7 +31,7 @@
             padding: 0 8px;
             color: #1a1a1a;
             min-height: 100vh;
-            overflow-y: scroll;
+            overflow-y: auto;
             user-select: none;
         }
         input {
@@ -193,6 +193,7 @@
         .summary-row {
             display: flex;
             justify-content: space-between;
+            align-items: center;
             margin: 1.2vh 0;
             font-size: 4.2vw;
         }
@@ -418,6 +419,55 @@
             transition: background 0.15s ease;
         }
 
+        .info-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: #d6d9e0;
+            color: #6a7485;
+            font-size: 10px;
+            font-weight: 700;
+            font-style: italic;
+            cursor: default;
+            position: absolute;
+            top: -10px;
+            right: -10px;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .info-icon:hover {
+            background: #2563eb;
+            color: white;
+        }
+        .payment-breakdown {
+            display: none;
+            position: fixed;
+            background: white;
+            border: 1px solid #e1e4ea;
+            border-radius: 8px;
+            padding: 14px 18px;
+            font-size: 1.1em;
+            font-weight: 400;
+            color: #1a1a1a;
+            white-space: nowrap;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.18);
+            z-index: 9999;
+            pointer-events: none;
+        }
+        .payment-breakdown.visible {
+            display: block;
+        }
+        .breakdown-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 24px;
+            padding: 3px 0;
+            color: #6a7485;
+        }
+
 
     </style>
 </head>
@@ -464,7 +514,10 @@
 
             <div class="summary-row">
                 <span class="summary-label" style="font-weight: 800; color: #1a1a1a;">Monthly Payment</span>
-                <span id="totalPaymentDisplay" class="summary-value" style="font-style: normal; font-weight: 800; padding: 2px 4px;">$0</span>
+                <span style="position: relative; display: inline-block;">
+                    <span class="info-icon" id="paymentInfoBtn">i</span>
+                    <span id="totalPaymentDisplay" class="summary-value" style="font-style: normal; font-weight: 800; padding: 2px 4px;">$0</span>
+                </span>
             </div>
 
             <div id="basementRows" style="display: none;">
@@ -492,6 +545,13 @@
 
 </div>
 
+<div class="payment-breakdown" id="paymentBreakdown">
+    <div class="breakdown-row"><span>Principal & Interest</span><span id="brkPI">$0</span></div>
+    <div class="breakdown-row"><span>Taxes</span><span id="brkTaxes">$0</span></div>
+    <div class="breakdown-row"><span>Homeowners Insurance</span><span id="brkHOI">$0</span></div>
+    <div class="breakdown-row"><span>Mortgage Insurance</span><span id="brkPMI">$0</span></div>
+    <div class="breakdown-row" style="border-top: 1px solid #e1e4ea; margin-top: 6px; padding-top: 6px; font-weight: 700; color: #1a1a1a;"><span>Monthly Payment</span><span id="brkTotal">$0</span></div>
+</div>
 
 <script>
 /* ============================================================
@@ -810,6 +870,18 @@ function calculate(editedField = null) {
         const rentalDisplayEl = document.getElementById('rentalIncomeDisplay');
         if (rentalDisplayEl) rentalDisplayEl.textContent = '$' + Math.round(state.rentalIncome).toLocaleString();
     }
+
+    // Update breakdown values
+    const brkPI = document.getElementById('brkPI');
+    const brkTaxes = document.getElementById('brkTaxes');
+    const brkHOI = document.getElementById('brkHOI');
+    const brkPMI = document.getElementById('brkPMI');
+    if (brkPI) brkPI.textContent = '$' + Math.round(state.pi).toLocaleString();
+    if (brkTaxes) brkTaxes.textContent = '$' + Math.round(state.taxes).toLocaleString();
+    if (brkHOI) brkHOI.textContent = '$' + Math.round(state.hoi).toLocaleString();
+    if (brkPMI) brkPMI.textContent = '$' + Math.round(state.pmi).toLocaleString();
+    const brkTotal = document.getElementById('brkTotal');
+    if (brkTotal) brkTotal.textContent = '$' + Math.round(monthlyPayment).toLocaleString();
 
 }
 
@@ -1233,6 +1305,21 @@ function toggleBasement() {
     const yourPayment = Math.max(0, state.desiredPayment - state.rentalIncome);
     document.getElementById('yourPaymentDisplay').textContent = '$' + Math.round(yourPayment).toLocaleString();
 }
+
+// Breakdown popup hover
+(function() {
+    const btn = document.getElementById('paymentInfoBtn');
+    const popup = document.getElementById('paymentBreakdown');
+    btn.addEventListener('mouseenter', function() {
+        const rect = btn.getBoundingClientRect();
+        popup.style.top = (rect.bottom + 6) + 'px';
+        popup.style.right = (window.innerWidth - rect.right - 10) + 'px';
+        popup.classList.add('visible');
+    });
+    btn.addEventListener('mouseleave', function() {
+        popup.classList.remove('visible');
+    });
+})();
 
 </script>
 
