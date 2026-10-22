@@ -116,197 +116,110 @@ def score_photo(photo: Image.Image) -> float:
     return mean + 0.12 * math.sqrt(var)
 
 
-Rect = tuple[int, int, int, int]  # x0, y0, x1, y1
-
-
-def _rect_mask_coverage(mask_arr: np.ndarray, rect: Rect) -> float:
-    x0, y0, x1, y1 = rect
-    if x1 <= x0 or y1 <= y0:
-        return 0.0
-    patch = mask_arr[y0:y1, x0:x1]
-    return float(patch.mean()) / 255.0 if patch.size else 0.0
-
-
-def _split_rect(rect: Rect, rng: random.Random) -> tuple[Rect, Rect] | None:
-    x0, y0, x1, y1 = rect
-    w, h = x1 - x0, y1 - y0
-    if w < 40 or h < 40:
-        return None
-    # Prefer splitting the longer axis; keep both kids decently sized
-    if w >= h and w >= 70:
-        cut = int(x0 + w * rng.uniform(0.32, 0.68))
-        cut = min(max(cut, x0 + 28), x1 - 28)
-        return (x0, y0, cut, y1), (cut, y0, x1, y1)
-    if h >= 70:
-        cut = int(y0 + h * rng.uniform(0.32, 0.68))
-        cut = min(max(cut, y0 + 28), y1 - 28)
-        return (x0, y0, x1, cut), (x0, cut, x1, y1)
-    return None
-
-
-def _digit_bboxes(mask_arr: np.ndarray) -> list[Rect]:
-    """Bounding boxes for the '3' and '0' (two largest x-separated blobs)."""
+def place_seeds(mask_arr: np.ndarray, count: int, seed: int = 2030) -> np.ndarray:
+    """Seeds inside the mask with spacing variety (large + small photo regions)."""
+    rng = np.random.default_rng(seed)
     ys, xs = np.where(mask_arr > 0)
-    if len(xs) == 0:
-        return []
-    # Column occupancy — find the gap between digits
-    col = mask_arr.any(axis=0)
-    runs: list[tuple[int, int]] = []
-    start = None
-    for x, on in enumerate(col):
-        if on and start is None:
-            start = x
-        elif not on and start is not None:
-            runs.append((start, x))
-            start = None
-    if start is not None:
-        runs.append((start, mask_arr.shape[1]))
-    boxes: list[Rect] = []
-    for x0, x1 in runs:
-        band = mask_arr[:, x0:x1]
-        rows = np.where(band.any(axis=1))[0]
-        if len(rows) == 0:
-            continue
-        boxes.append((x0, int(rows.min()), x1, int(rows.max()) + 1))
-    # Keep the two widest runs (3 and 0); ignore noise
-    boxes.sort(key=lambda r: (r[2] - r[0]) * (r[3] - r[1]), reverse=True)
-    return boxes[:2]
+    pts: list[tuple[float, float]] = []
+    min_dist = max(48.0, math.sqrt(len(xs) / (count * 2.0)))
+    attempts = 0
+    while len(pts) < count // 2 and attempts < 90000:
+        attempts += 1
+        i = int(rng.integers(0, len(xs)))
+        x, y = float(xs[i]), float(ys[i])
+        if all((x - px) ** 2 + (y - py) ** 2 >= min_dist**2 for px, py in pts):
+            pts.append((x, y))
+        if attempts % 14000 == 0:
+            min_dist *= 0.9
+    min_dist2 = min_dist * 0.42
+    attempts = 0
+    while len(pts) < count and attempts < 120000:
+        attempts += 1
+        i = int(rng.integers(0, len(xs)))
+        x, y = float(xs[i]), float(ys[i])
+        if all((x - px) ** 2 + (y - py) ** 2 >= min_dist2**2 for px, py in pts):
+            pts.append((x, y))
+        if attempts % 16000 == 0:
+            min_dist2 *= 0.86
+    while len(pts) < count:
+        i = int(rng.integers(0, len(xs)))
+        pts.append((float(xs[i]), float(ys[i])))
+    return np.array(pts[:count], dtype=np.float64)
 
 
-def rectangular_tiles(mask_arr: np.ndarray, count: int, seed: int = 2030) -> list[Rect]:
-    """BSP rectangular mosaic per digit — abutting tiles, zero interior gaps."""
-    rng = random.Random(seed)
-    boxes = _digit_bboxes(mask_arr)
-    if not boxes:
-        raise SystemExit("Could not locate digit regions in mask")
-
-    # Allocate tile counts by digit area
-    areas = [max(1, (b[2] - b[0]) * (b[3] - b[1])) for b in boxes]
-    total_a = sum(areas)
-    quotas = [max(8, round(count * a / total_a)) for a in areas]
-    # Fix rounding to exact count
-    while sum(quotas) > count:
-        quotas[quotas.index(max(quotas))] -= 1
-    while sum(quotas) < count:
-        quotas[quotas.index(min(quotas))] += 1
-
-    all_tiles: list[Rect] = []
-    for box, quota in zip(boxes, quotas):
-        tiles: list[Rect] = [box]
-        guard = 0
-        while len(tiles) < quota and guard < 4000:
-            guard += 1
-            scored = []
-            for i, r in enumerate(tiles):
-                x0, y0, x1, y1 = r
-                area = (x1 - x0) * (y1 - y0)
-                cov = _rect_mask_coverage(mask_arr, r)
-                if area < 48 * 48 or cov < 0.1:
-                    continue
-                scored.append((area * (0.4 + cov), i))
-            if not scored:
-                break
-            scored.sort(reverse=True)
-            pick = scored[rng.randrange(min(4, len(scored)))][1]
-            pair = _split_rect(tiles[pick], rng)
-            if pair is None:
-                # try next best
-                ok = False
-                for _, j in scored[1:6]:
-                    pair = _split_rect(tiles[j], rng)
-                    if pair is not None:
-                        pick = j
-                        ok = True
-                        break
-                if not ok:
-                    break
-            a, b = pair
-            tiles.pop(pick)
-            tiles.extend([a, b])
-
-        # Prefer tiles that actually cover the digit
-        tiles = [r for r in tiles if _rect_mask_coverage(mask_arr, r) >= 0.06]
-        while len(tiles) < quota:
-            scored = sorted(
-                (
-                    ((r[2] - r[0]) * (r[3] - r[1]), i)
-                    for i, r in enumerate(tiles)
-                    if (r[2] - r[0]) >= 56 and (r[3] - r[1]) >= 56
-                ),
-                reverse=True,
-            )
-            if not scored:
-                break
-            i = scored[0][1]
-            pair = _split_rect(tiles[i], rng)
-            if pair is None:
-                break
-            tiles.pop(i)
-            tiles.extend(pair)
-        all_tiles.extend(tiles[:quota])
-
-    # Top up / trim to exact count across both digits
-    while len(all_tiles) < count:
-        scored = sorted(
-            (
-                ((r[2] - r[0]) * (r[3] - r[1]), i)
-                for i, r in enumerate(all_tiles)
-                if (r[2] - r[0]) >= 56 and (r[3] - r[1]) >= 56
-            ),
-            reverse=True,
-        )
-        if not scored:
-            break
-        i = scored[0][1]
-        pair = _split_rect(all_tiles[i], rng)
-        if pair is None:
-            break
-        all_tiles.pop(i)
-        all_tiles.extend(pair)
-
-    while len(all_tiles) > count:
-        all_tiles.sort(key=lambda r: (r[2] - r[0]) * (r[3] - r[1]))
-        a, b = all_tiles[0], all_tiles[1]
-        merged = (min(a[0], b[0]), min(a[1], b[1]), max(a[2], b[2]), max(a[3], b[3]))
-        all_tiles = [merged] + all_tiles[2:]
-
-    return all_tiles[:count]
+def voronoi_labels(mask_arr: np.ndarray, seeds: np.ndarray) -> np.ndarray:
+    h, w = mask_arr.shape
+    labels = np.full((h, w), -1, dtype=np.int32)
+    ys, xs = np.where(mask_arr > 0)
+    chunk = 25000
+    sx, sy = seeds[:, 0], seeds[:, 1]
+    for start in range(0, len(xs), chunk):
+        end = min(start + chunk, len(xs))
+        px = xs[start:end].astype(np.float64)[:, None]
+        py = ys[start:end].astype(np.float64)[:, None]
+        nearest = np.argmin((px - sx) ** 2 + (py - sy) ** 2, axis=1)
+        labels[ys[start:end], xs[start:end]] = nearest
+    return labels
 
 
 def build_mosaic(mask: Image.Image, photos: list[Image.Image]) -> Image.Image:
-    """Continuous rectangular photo mosaic clipped to the 30 silhouette."""
+    """Seamless Voronoi photo fill — every mask pixel belongs to exactly one photo."""
     mask_arr = np.array(mask)
-    tiles = rectangular_tiles(mask_arr, len(photos), seed=2030)
-    if len(tiles) < len(photos):
-        raise SystemExit(f"Only produced {len(tiles)} tiles for {len(photos)} photos")
+    seeds = place_seeds(mask_arr, len(photos), seed=2030)
+    labels = voronoi_labels(mask_arr, seeds)
 
-    # Larger tiles get clearer photos
-    tiles_sorted = sorted(
-        tiles, key=lambda r: (r[2] - r[0]) * (r[3] - r[1]), reverse=True
+    areas = sorted(
+        ((int(np.sum(labels == i)), i) for i in range(len(photos))), reverse=True
     )
-    ranked_photos = sorted(
+    ranked = sorted(
         range(len(photos)), key=lambda i: score_photo(photos[i]), reverse=True
     )
+    photo_for = {rid: ranked[rank] for rank, (_, rid) in enumerate(areas)}
 
-    rgb = Image.new("RGB", mask.size, (0, 0, 0))
-    # Draw largest first, then smaller on top with 1px overlap via expanded paste
-    for rect, pi in zip(tiles_sorted, ranked_photos):
-        x0, y0, x1, y1 = rect
-        # Overlap neighbors by 2px so JPEG/AA never reveals background hairlines
-        x0e, y0e = max(0, x0 - 2), max(0, y0 - 2)
-        x1e = min(mask.size[0], x1 + 2)
-        y1e = min(mask.size[1], y1 + 2)
+    # Accumulate with soft-edge overlap so photo joins look continuous, not gridded
+    acc = np.zeros((mask.size[1], mask.size[0], 3), dtype=np.float64)
+    weight = np.zeros((mask.size[1], mask.size[0]), dtype=np.float64)
+
+    for rid in range(len(photos)):
+        ys, xs = np.where(labels == rid)
+        if len(xs) == 0:
+            continue
+        x0, y0, x1, y1 = int(xs.min()), int(ys.min()), int(xs.max()) + 1, int(ys.max()) + 1
+        # Expand for soft blend apron
+        pad = 4
+        x0e, y0e = max(0, x0 - pad), max(0, y0 - pad)
+        x1e = min(mask.size[0], x1 + pad)
+        y1e = min(mask.size[1], y1 + pad)
         bw, bh = x1e - x0e, y1e - y0e
-        fitted = ImageOps.fit(
-            photos[pi],
-            (bw, bh),
-            method=Image.Resampling.LANCZOS,
-            centering=(0.5, 0.42),
+
+        fitted = np.asarray(
+            ImageOps.fit(
+                photos[photo_for[rid]],
+                (bw, bh),
+                method=Image.Resampling.LANCZOS,
+                centering=(0.5, 0.42),
+            ),
+            dtype=np.float64,
         )
-        rgb.paste(fitted, (x0e, y0e))
+
+        cell = (labels[y0e:y1e, x0e:x1e] == rid).astype(np.uint8) * 255
+        cell_img = Image.fromarray(cell, mode="L").filter(ImageFilter.MaxFilter(7))
+        # Soft falloff at cell edge for blended seams
+        soft = cell_img.filter(ImageFilter.GaussianBlur(1.8))
+        wts = np.asarray(soft, dtype=np.float64) / 255.0
+
+        acc[y0e:y1e, x0e:x1e] += fitted * wts[..., None]
+        weight[y0e:y1e, x0e:x1e] += wts
+
+    weight = np.maximum(weight, 1e-6)
+    rgb_arr = np.clip(acc / weight[..., None], 0, 255).astype(np.uint8)
+    # Only keep pixels inside the digit (zero out exterior before alpha)
+    inside = mask_arr > 0
+    rgb_arr[~inside] = 0
+    rgb = Image.fromarray(rgb_arr, mode="RGB")
 
     hard = mask.point(lambda p: 255 if p > 0 else 0)
-    edge = hard.filter(ImageFilter.GaussianBlur(0.7))
+    edge = hard.filter(ImageFilter.GaussianBlur(0.6))
     out = Image.new("RGBA", mask.size, (0, 0, 0, 0))
     out.paste(rgb, (0, 0))
     out.putalpha(edge)
