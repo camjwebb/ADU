@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
-"""Create a 30th anniversary photo collage card in the shape of '30'."""
+"""Create a 30th anniversary photo collage card in the shape of '30'.
+
+Photos form a continuous mosaic (no gaps, no circular cutouts) clipped
+to a clear "30" silhouette.
+"""
 
 from __future__ import annotations
 
@@ -7,21 +11,21 @@ import math
 import random
 from pathlib import Path
 
-from PIL import Image, ImageDraw, ImageEnhance, ImageFilter, ImageFont, ImageOps
+import numpy as np
+from PIL import Image, ImageDraw, ImageEnhance, ImageFilter, ImageFont, ImageOps, ImageChops
 
 ASSETS = Path("/home/ubuntu/.cursor/projects/workspace/assets")
 OUT_DIR = Path("/workspace")
 ARTIFACTS = Path("/opt/cursor/artifacts")
 
-# Portrait card, print-friendly resolution
 W, H = 2400, 3200
-COLLAGE_TOP = 180
-COLLAGE_H = 2100
+COLLAGE_TOP = 160
+COLLAGE_H = 2120
 TEXT_TOP = 2380
 
-BG_TOP = (255, 246, 248)  # soft blush
-BG_BOT = (252, 236, 230)  # warm rose cream
-ACCENT = (140, 55, 75)  # deep rose
+BG_TOP = (255, 246, 248)
+BG_BOT = (252, 236, 230)
+ACCENT = (140, 55, 75)
 SOFT_LINE = (210, 160, 170)
 
 
@@ -32,9 +36,8 @@ def load_photos() -> list[Image.Image]:
     photos = []
     for p in paths:
         img = Image.open(p).convert("RGB")
-        # Mild warm lift so collage feels cohesive
-        img = ImageEnhance.Color(img).enhance(1.08)
-        img = ImageEnhance.Contrast(img).enhance(1.05)
+        img = ImageEnhance.Color(img).enhance(1.06)
+        img = ImageEnhance.Contrast(img).enhance(1.04)
         photos.append(img)
     return photos
 
@@ -44,13 +47,11 @@ def make_background() -> Image.Image:
     draw = ImageDraw.Draw(canvas)
     for y in range(H):
         t = y / (H - 1)
-        # Soft vertical wash + faint vignette-friendly blend
         r = int(BG_TOP[0] * (1 - t) + BG_BOT[0] * t)
         g = int(BG_TOP[1] * (1 - t) + BG_BOT[1] * t)
         b = int(BG_TOP[2] * (1 - t) + BG_BOT[2] * t)
         draw.line([(0, y), (W, y)], fill=(r, g, b))
 
-    # Subtle paper grain
     rng = random.Random(30)
     noise = Image.new("L", (W // 2, H // 2), 128)
     nd = noise.load()
@@ -67,211 +68,43 @@ def make_background() -> Image.Image:
 
 
 def make_thirty_mask(width: int, height: int) -> Image.Image:
-    """Bold filled '30' mask for packing photo circles.
+    """Solid continuous '30' silhouette from a heavy sans glyph.
 
-    Drawn geometrically (not as a font) so stroke width stays wide enough
-    for many photo medallions while the silhouette still reads clearly as 30.
+    Digits are drawn separately with a clear gap, then lightly dilated so each
+    digit is one unbroken filled region (no cracks for the background to show).
     """
     mask = Image.new("L", (width, height), 0)
     draw = ImageDraw.Draw(mask)
 
-    # Layout: two digits side by side with a small gap
-    margin_x = int(width * 0.04)
-    margin_y = int(height * 0.06)
-    gap = int(width * 0.04)
-    digit_w = (width - 2 * margin_x - gap) // 2
-    digit_h = height - 2 * margin_y
-    stroke = max(int(min(digit_w, digit_h) * 0.28), 90)
+    font_path = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
+    if not Path(font_path).exists():
+        font_path = "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf"
+    font = ImageFont.truetype(font_path, size=int(height * 0.92))
 
-    def draw_three(ox: int, oy: int, dw: int, dh: int, t: int) -> None:
-        # Open "3" made of two stacked arcs + a middle bar stub
-        # Outer bounding box for the digit
-        left, right = ox, ox + dw
-        top, bottom = oy, oy + dh
-        mid_y = (top + bottom) // 2
-        # Upper bowl
-        draw.arc(
-            [left + t // 4, top, right, mid_y + t // 2],
-            start=270,
-            end=90,
-            fill=255,
-            width=t,
-        )
-        # Lower bowl
-        draw.arc(
-            [left + t // 4, mid_y - t // 2, right, bottom],
-            start=270,
-            end=90,
-            fill=255,
-            width=t,
-        )
-        # Soften the open left edge with short caps so packing stays dense
-        draw.ellipse(
-            [left + t // 4, top, left + t // 4 + t, top + t],
-            fill=255,
-        )
-        draw.ellipse(
-            [left + t // 4, bottom - t, left + t // 4 + t, bottom],
-            fill=255,
-        )
-        draw.ellipse(
-            [left + t // 3, mid_y - t // 2, left + t // 3 + t, mid_y + t // 2],
-            fill=255,
-        )
+    # Measure each digit so we can space them apart cleanly
+    b3 = draw.textbbox((0, 0), "3", font=font)
+    b0 = draw.textbbox((0, 0), "0", font=font)
+    w3, h3 = b3[2] - b3[0], b3[3] - b3[1]
+    w0, h0 = b0[2] - b0[0], b0[3] - b0[1]
+    gap = int(width * 0.055)
+    total_w = w3 + gap + w0
+    digit_h = max(h3, h0)
+    x0 = (width - total_w) // 2
+    y0 = (height - digit_h) // 2 - int(height * 0.02)
 
-    # Draw 3
-    from PIL import ImageChops
+    draw.text((x0 - b3[0], y0 - b3[1]), "3", fill=255, font=font)
+    draw.text((x0 + w3 + gap - b0[0], y0 - b0[1]), "0", fill=255, font=font)
 
-    three_x = margin_x
-    draw_three(three_x, margin_y, digit_w, digit_h, stroke)
-
-    # Draw 0 as a thick annulus
-    zero_x = margin_x + digit_w + gap
-    outer = Image.new("L", (width, height), 0)
-    odraw = ImageDraw.Draw(outer)
-    odraw.ellipse([zero_x, margin_y, zero_x + digit_w, margin_y + digit_h], fill=255)
-    inner = Image.new("L", (width, height), 0)
-    idraw = ImageDraw.Draw(inner)
-    pad = stroke
-    idraw.ellipse(
-        [
-            zero_x + pad,
-            margin_y + pad,
-            zero_x + digit_w - pad,
-            margin_y + digit_h - pad,
-        ],
-        fill=255,
-    )
-    ring = ImageChops.subtract(outer, inner)
-    mask = ImageChops.lighter(mask, ring)
-
-    # Slight blur + rethreshold to round harsh corners for nicer packing
-    mask = mask.filter(ImageFilter.MaxFilter(7))
-    mask = mask.filter(ImageFilter.GaussianBlur(1.5))
-    mask = mask.point(lambda p: 255 if p > 40 else 0)
+    # Thicken just enough to close antialias pinholes — keep digits separate
+    for _ in range(2):
+        mask = mask.filter(ImageFilter.MaxFilter(9))
+    mask = mask.filter(ImageFilter.GaussianBlur(1.2))
+    mask = mask.point(lambda p: 255 if p > 60 else 0)
     return mask
 
 
-def circle_fits(
-    cx: float,
-    cy: float,
-    r: float,
-    mask: Image.Image,
-    placed: list[tuple[float, float, float]],
-    gap: float = 6.0,
-) -> bool:
-    w, h = mask.size
-    if cx - r < 2 or cy - r < 2 or cx + r >= w - 2 or cy + r >= h - 2:
-        return False
-    # Sample points around and inside the circle against the mask
-    px = mask.load()
-    samples = [(cx, cy)]
-    for i in range(16):
-        a = 2 * math.pi * i / 16
-        samples.append((cx + math.cos(a) * r * 0.92, cy + math.sin(a) * r * 0.92))
-    for i in range(8):
-        a = 2 * math.pi * i / 8
-        samples.append((cx + math.cos(a) * r * 0.55, cy + math.sin(a) * r * 0.55))
-    for sx, sy in samples:
-        ix, iy = int(sx), int(sy)
-        if ix < 0 or iy < 0 or ix >= w or iy >= h or px[ix, iy] < 128:
-            return False
-    for ox, oy, orad in placed:
-        if math.hypot(cx - ox, cy - oy) < r + orad + gap:
-            return False
-    return True
-
-
-def pack_circles(mask: Image.Image, count: int, seed: int = 30) -> list[tuple[float, float, float]]:
-    """Greedy multi-pass circle packing inside the mask, varied sizes."""
-    rng = random.Random(seed)
-    w, h = mask.size
-    # Prefer interior pixels of the glyph
-    candidates = [
-        (x, y)
-        for y in range(0, h, 3)
-        for x in range(0, w, 3)
-        if mask.getpixel((x, y)) > 128
-    ]
-    rng.shuffle(candidates)
-
-    # Size mix tuned so ~46 medallions fill a thick "30"
-    scale = h / 2100
-    radii_plan = (
-        [int(r * scale) for r in (155, 145, 135, 125, 120, 115)]
-        + [int(108 * scale)] * 8
-        + [int(96 * scale)] * 10
-        + [int(84 * scale)] * 12
-        + [int(72 * scale)] * 12
-        + [int(60 * scale)] * 12
-    )
-
-    placed: list[tuple[float, float, float]] = []
-
-    for r in radii_plan:
-        if len(placed) >= count:
-            break
-        for _ in range(1200):
-            if not candidates:
-                break
-            cx, cy = candidates[rng.randrange(len(candidates))]
-            cx += rng.uniform(-2, 2)
-            cy += rng.uniform(-2, 2)
-            if circle_fits(cx, cy, r, mask, placed, gap=4):
-                placed.append((cx, cy, float(r)))
-                break
-
-    # Fill remaining with progressively smaller circles
-    fill_r = int(58 * scale)
-    while len(placed) < count and fill_r >= int(36 * scale):
-        added = 0
-        for _ in range(4000):
-            if len(placed) >= count:
-                break
-            cx, cy = candidates[rng.randrange(len(candidates))]
-            cx += rng.uniform(-4, 4)
-            cy += rng.uniform(-4, 4)
-            if circle_fits(cx, cy, fill_r, mask, placed, gap=3):
-                placed.append((cx, cy, float(fill_r)))
-                added += 1
-                if added >= 4:
-                    break
-        if added == 0:
-            fill_r -= 3
-        elif rng.random() < 0.4:
-            fill_r = max(int(36 * scale), fill_r - 2)
-
-    return placed
-
-
-def circular_crop(photo: Image.Image, diameter: int) -> Image.Image:
-    """Center-weighted square crop into a circular RGBA tile."""
-    side = max(diameter, 8)
-    # Bias slightly upward — faces often sit in upper half of portraits
-    img = ImageOps.fit(
-        photo,
-        (side, side),
-        method=Image.Resampling.LANCZOS,
-        centering=(0.5, 0.42),
-    )
-    mask = Image.new("L", (side, side), 0)
-    ImageDraw.Draw(mask).ellipse((1, 1, side - 2, side - 2), fill=255)
-    # Soft edge
-    mask = mask.filter(ImageFilter.GaussianBlur(1.2))
-    out = Image.new("RGBA", (side, side), (0, 0, 0, 0))
-    out.paste(img, (0, 0))
-    out.putalpha(mask)
-    # Thin white ring for a polished photo-medallion look
-    ring = Image.new("RGBA", (side, side), (0, 0, 0, 0))
-    rd = ImageDraw.Draw(ring)
-    rd.ellipse((1, 1, side - 2, side - 2), outline=(255, 255, 255, 220), width=max(2, side // 55))
-    out = Image.alpha_composite(out, ring)
-    return out
-
-
 def score_photo(photo: Image.Image) -> float:
-    """Prefer brighter, higher-contrast images for larger slots."""
-    thumb = photo.resize((64, 64), Image.Resampling.BILINEAR)
+    thumb = photo.resize((48, 48), Image.Resampling.BILINEAR)
     px = thumb.load()
     luma = [
         0.299 * px[x, y][0] + 0.587 * px[x, y][1] + 0.114 * px[x, y][2]
@@ -280,35 +113,231 @@ def score_photo(photo: Image.Image) -> float:
     ]
     mean = sum(luma) / len(luma)
     var = sum((v - mean) ** 2 for v in luma) / len(luma)
-    return mean + 0.15 * math.sqrt(var)
+    return mean + 0.12 * math.sqrt(var)
+
+
+Rect = tuple[int, int, int, int]  # x0, y0, x1, y1
+
+
+def _rect_mask_coverage(mask_arr: np.ndarray, rect: Rect) -> float:
+    x0, y0, x1, y1 = rect
+    if x1 <= x0 or y1 <= y0:
+        return 0.0
+    patch = mask_arr[y0:y1, x0:x1]
+    return float(patch.mean()) / 255.0 if patch.size else 0.0
+
+
+def _split_rect(rect: Rect, rng: random.Random) -> tuple[Rect, Rect] | None:
+    x0, y0, x1, y1 = rect
+    w, h = x1 - x0, y1 - y0
+    if w < 40 or h < 40:
+        return None
+    # Prefer splitting the longer axis; keep both kids decently sized
+    if w >= h and w >= 70:
+        cut = int(x0 + w * rng.uniform(0.32, 0.68))
+        cut = min(max(cut, x0 + 28), x1 - 28)
+        return (x0, y0, cut, y1), (cut, y0, x1, y1)
+    if h >= 70:
+        cut = int(y0 + h * rng.uniform(0.32, 0.68))
+        cut = min(max(cut, y0 + 28), y1 - 28)
+        return (x0, y0, x1, cut), (x0, cut, x1, y1)
+    return None
+
+
+def _digit_bboxes(mask_arr: np.ndarray) -> list[Rect]:
+    """Bounding boxes for the '3' and '0' (two largest x-separated blobs)."""
+    ys, xs = np.where(mask_arr > 0)
+    if len(xs) == 0:
+        return []
+    # Column occupancy — find the gap between digits
+    col = mask_arr.any(axis=0)
+    runs: list[tuple[int, int]] = []
+    start = None
+    for x, on in enumerate(col):
+        if on and start is None:
+            start = x
+        elif not on and start is not None:
+            runs.append((start, x))
+            start = None
+    if start is not None:
+        runs.append((start, mask_arr.shape[1]))
+    boxes: list[Rect] = []
+    for x0, x1 in runs:
+        band = mask_arr[:, x0:x1]
+        rows = np.where(band.any(axis=1))[0]
+        if len(rows) == 0:
+            continue
+        boxes.append((x0, int(rows.min()), x1, int(rows.max()) + 1))
+    # Keep the two widest runs (3 and 0); ignore noise
+    boxes.sort(key=lambda r: (r[2] - r[0]) * (r[3] - r[1]), reverse=True)
+    return boxes[:2]
+
+
+def rectangular_tiles(mask_arr: np.ndarray, count: int, seed: int = 2030) -> list[Rect]:
+    """BSP rectangular mosaic per digit — abutting tiles, zero interior gaps."""
+    rng = random.Random(seed)
+    boxes = _digit_bboxes(mask_arr)
+    if not boxes:
+        raise SystemExit("Could not locate digit regions in mask")
+
+    # Allocate tile counts by digit area
+    areas = [max(1, (b[2] - b[0]) * (b[3] - b[1])) for b in boxes]
+    total_a = sum(areas)
+    quotas = [max(8, round(count * a / total_a)) for a in areas]
+    # Fix rounding to exact count
+    while sum(quotas) > count:
+        quotas[quotas.index(max(quotas))] -= 1
+    while sum(quotas) < count:
+        quotas[quotas.index(min(quotas))] += 1
+
+    all_tiles: list[Rect] = []
+    for box, quota in zip(boxes, quotas):
+        tiles: list[Rect] = [box]
+        guard = 0
+        while len(tiles) < quota and guard < 4000:
+            guard += 1
+            scored = []
+            for i, r in enumerate(tiles):
+                x0, y0, x1, y1 = r
+                area = (x1 - x0) * (y1 - y0)
+                cov = _rect_mask_coverage(mask_arr, r)
+                if area < 48 * 48 or cov < 0.1:
+                    continue
+                scored.append((area * (0.4 + cov), i))
+            if not scored:
+                break
+            scored.sort(reverse=True)
+            pick = scored[rng.randrange(min(4, len(scored)))][1]
+            pair = _split_rect(tiles[pick], rng)
+            if pair is None:
+                # try next best
+                ok = False
+                for _, j in scored[1:6]:
+                    pair = _split_rect(tiles[j], rng)
+                    if pair is not None:
+                        pick = j
+                        ok = True
+                        break
+                if not ok:
+                    break
+            a, b = pair
+            tiles.pop(pick)
+            tiles.extend([a, b])
+
+        # Prefer tiles that actually cover the digit
+        tiles = [r for r in tiles if _rect_mask_coverage(mask_arr, r) >= 0.06]
+        while len(tiles) < quota:
+            scored = sorted(
+                (
+                    ((r[2] - r[0]) * (r[3] - r[1]), i)
+                    for i, r in enumerate(tiles)
+                    if (r[2] - r[0]) >= 56 and (r[3] - r[1]) >= 56
+                ),
+                reverse=True,
+            )
+            if not scored:
+                break
+            i = scored[0][1]
+            pair = _split_rect(tiles[i], rng)
+            if pair is None:
+                break
+            tiles.pop(i)
+            tiles.extend(pair)
+        all_tiles.extend(tiles[:quota])
+
+    # Top up / trim to exact count across both digits
+    while len(all_tiles) < count:
+        scored = sorted(
+            (
+                ((r[2] - r[0]) * (r[3] - r[1]), i)
+                for i, r in enumerate(all_tiles)
+                if (r[2] - r[0]) >= 56 and (r[3] - r[1]) >= 56
+            ),
+            reverse=True,
+        )
+        if not scored:
+            break
+        i = scored[0][1]
+        pair = _split_rect(all_tiles[i], rng)
+        if pair is None:
+            break
+        all_tiles.pop(i)
+        all_tiles.extend(pair)
+
+    while len(all_tiles) > count:
+        all_tiles.sort(key=lambda r: (r[2] - r[0]) * (r[3] - r[1]))
+        a, b = all_tiles[0], all_tiles[1]
+        merged = (min(a[0], b[0]), min(a[1], b[1]), max(a[2], b[2]), max(a[3], b[3]))
+        all_tiles = [merged] + all_tiles[2:]
+
+    return all_tiles[:count]
+
+
+def build_mosaic(mask: Image.Image, photos: list[Image.Image]) -> Image.Image:
+    """Continuous rectangular photo mosaic clipped to the 30 silhouette."""
+    mask_arr = np.array(mask)
+    tiles = rectangular_tiles(mask_arr, len(photos), seed=2030)
+    if len(tiles) < len(photos):
+        raise SystemExit(f"Only produced {len(tiles)} tiles for {len(photos)} photos")
+
+    # Larger tiles get clearer photos
+    tiles_sorted = sorted(
+        tiles, key=lambda r: (r[2] - r[0]) * (r[3] - r[1]), reverse=True
+    )
+    ranked_photos = sorted(
+        range(len(photos)), key=lambda i: score_photo(photos[i]), reverse=True
+    )
+
+    rgb = Image.new("RGB", mask.size, (0, 0, 0))
+    # Draw largest first, then smaller on top with 1px overlap via expanded paste
+    for rect, pi in zip(tiles_sorted, ranked_photos):
+        x0, y0, x1, y1 = rect
+        # Overlap neighbors by 2px so JPEG/AA never reveals background hairlines
+        x0e, y0e = max(0, x0 - 2), max(0, y0 - 2)
+        x1e = min(mask.size[0], x1 + 2)
+        y1e = min(mask.size[1], y1 + 2)
+        bw, bh = x1e - x0e, y1e - y0e
+        fitted = ImageOps.fit(
+            photos[pi],
+            (bw, bh),
+            method=Image.Resampling.LANCZOS,
+            centering=(0.5, 0.42),
+        )
+        rgb.paste(fitted, (x0e, y0e))
+
+    hard = mask.point(lambda p: 255 if p > 0 else 0)
+    edge = hard.filter(ImageFilter.GaussianBlur(0.7))
+    out = Image.new("RGBA", mask.size, (0, 0, 0, 0))
+    out.paste(rgb, (0, 0))
+    out.putalpha(edge)
+    return out
 
 
 def draw_message(canvas: Image.Image) -> None:
     draw = ImageDraw.Draw(canvas)
-    title_font = ImageFont.truetype(
-        "/usr/share/fonts/truetype/noto/NotoSerifDisplay-BoldItalic.ttf"
-        if Path("/usr/share/fonts/truetype/noto/NotoSerifDisplay-BoldItalic.ttf").exists()
-        else "/usr/share/fonts/truetype/liberation/LiberationSerif-BoldItalic.ttf",
-        72,
-    )
-    body_font = ImageFont.truetype(
-        "/usr/share/fonts/truetype/noto/NotoSerifDisplay-Regular.ttf"
-        if Path("/usr/share/fonts/truetype/noto/NotoSerifDisplay-Regular.ttf").exists()
-        else "/usr/share/fonts/truetype/liberation/LiberationSerif-Italic.ttf",
-        44,
-    )
+    title_path = "/usr/share/fonts/truetype/noto/NotoSerifDisplay-BoldItalic.ttf"
+    body_path = "/usr/share/fonts/truetype/noto/NotoSerifDisplay-Regular.ttf"
+    if not Path(title_path).exists():
+        title_path = "/usr/share/fonts/truetype/liberation/LiberationSerif-BoldItalic.ttf"
+    if not Path(body_path).exists():
+        body_path = "/usr/share/fonts/truetype/liberation/LiberationSerif-Italic.ttf"
+
+    title_font = ImageFont.truetype(title_path, 72)
+    body_font = ImageFont.truetype(body_path, 44)
     sign_font = ImageFont.truetype(
-        "/usr/share/fonts/truetype/liberation/LiberationSerif-Italic.ttf",
-        48,
+        "/usr/share/fonts/truetype/liberation/LiberationSerif-Italic.ttf", 48
     )
 
-    # Decorative rule
     cx = W // 2
     draw.line([(cx - 220, TEXT_TOP - 40), (cx + 220, TEXT_TOP - 40)], fill=SOFT_LINE, width=2)
-    # Small diamond accent
     d = 7
     draw.polygon(
-        [(cx, TEXT_TOP - 40 - d), (cx + d, TEXT_TOP - 40), (cx, TEXT_TOP - 40 + d), (cx - d, TEXT_TOP - 40)],
+        [
+            (cx, TEXT_TOP - 40 - d),
+            (cx + d, TEXT_TOP - 40),
+            (cx, TEXT_TOP - 40 + d),
+            (cx - d, TEXT_TOP - 40),
+        ],
         fill=ACCENT,
     )
 
@@ -331,83 +360,52 @@ def draw_message(canvas: Image.Image) -> None:
     sb = draw.textbbox((0, 0), sign, font=sign_font)
     draw.text(((W - (sb[2] - sb[0])) // 2, y + 28), sign, font=sign_font, fill=ACCENT)
 
-
-def build_card() -> Path:
-    photos = load_photos()
-    # Assign larger slots to stronger / clearer photos
-    ranked = sorted(range(len(photos)), key=lambda i: score_photo(photos[i]), reverse=True)
-
-    canvas = make_background().convert("RGBA")
-    collage_w, collage_h = W - 160, COLLAGE_H
-    mask = make_thirty_mask(collage_w, collage_h)
-
-    circles: list[tuple[float, float, float]] = []
-    for seed in (2030, 42, 7, 99, 1234):
-        circles = pack_circles(mask, count=46, seed=seed)
-        print(f"seed {seed}: packed {len(circles)} circles")
-        if len(circles) >= 46:
-            break
-    if len(circles) < 46:
-        raise SystemExit(f"Only packed {len(circles)} circles; need denser packing")
-
-    # Sort circles largest-first; pair with ranked photos
-    circles_sorted = sorted(circles, key=lambda c: c[2], reverse=True)[:46]
-    # Use all photos; if we somehow have fewer circles, drop lowest-ranked
-    n = min(len(circles_sorted), len(photos))
-    circles_sorted = circles_sorted[:n]
-    photo_order = ranked[:n]
-
-    layer = Image.new("RGBA", (collage_w, collage_h), (0, 0, 0, 0))
-    # Soft under-glow of the number for readability of the shape
-    glow = mask.filter(ImageFilter.GaussianBlur(18)).point(lambda p: int(p * 0.22))
-    rose_glow = Image.new("RGBA", (collage_w, collage_h), (180, 90, 110, 0))
-    rose_glow.putalpha(glow)
-    layer = Image.alpha_composite(layer, rose_glow)
-
-    for (cx, cy, r), pi in zip(circles_sorted, photo_order):
-        d = int(r * 2)
-        tile = circular_crop(photos[pi], d)
-        # Soft drop shadow
-        shadow = Image.new("RGBA", (d + 12, d + 12), (0, 0, 0, 0))
-        sd = ImageDraw.Draw(shadow)
-        sd.ellipse((6, 8, d + 4, d + 8), fill=(90, 40, 55, 55))
-        shadow = shadow.filter(ImageFilter.GaussianBlur(4))
-        layer.alpha_composite(shadow, (int(cx - r - 6), int(cy - r - 4)))
-        layer.alpha_composite(tile, (int(cx - r), int(cy - r)))
-
-    ox = (W - collage_w) // 2
-    canvas.alpha_composite(layer, (ox, COLLAGE_TOP))
-
-    # Convert for text drawing
-    final = canvas.convert("RGB")
-    draw_message(final)
-
-    # Small footer years hint
-    draw = ImageDraw.Draw(final)
     foot = ImageFont.truetype(
-        "/usr/share/fonts/truetype/liberation/LiberationSerif-Regular.ttf",
-        28,
+        "/usr/share/fonts/truetype/liberation/LiberationSerif-Regular.ttf", 28
     )
     label = "30 Years of Love"
     fb = draw.textbbox((0, 0), label, font=foot)
-    draw.text(
-        ((W - (fb[2] - fb[0])) // 2, H - 90),
-        label,
-        font=foot,
-        fill=(170, 120, 130),
-    )
+    draw.text(((W - (fb[2] - fb[0])) // 2, H - 90), label, font=foot, fill=(170, 120, 130))
 
-    out = OUT_DIR / "anniversary_30_card.jpg"
-    final.save(out, quality=95, optimize=True)
+
+def build_card() -> Path:
+    photos = load_photos()
+    canvas = make_background().convert("RGBA")
+
+    collage_w, collage_h = W - 120, COLLAGE_H
+    mask = make_thirty_mask(collage_w, collage_h)
+    mosaic = build_mosaic(mask, photos)
+
+    # Soft outer shadow only (outside the digits) so the silhouette lifts off the paper
+    shadow = mask.filter(ImageFilter.GaussianBlur(18)).point(lambda p: int(p * 0.28))
+    # Knock out the digit interior so shadow doesn't tint photo seams
+    shadow = ImageChops.subtract(shadow, mask.point(lambda p: 255 if p > 0 else 0))
+    shade = Image.new("RGBA", (collage_w, collage_h), (90, 40, 55, 0))
+    shade.putalpha(shadow)
+
+    ox = (W - collage_w) // 2
+    canvas.alpha_composite(shade, (ox, COLLAGE_TOP + 6))
+    canvas.alpha_composite(mosaic, (ox, COLLAGE_TOP))
+
+    final = canvas.convert("RGB")
+    draw_message(final)
+
     ARTIFACTS.mkdir(parents=True, exist_ok=True)
-    art = ARTIFACTS / "anniversary_30_card.jpg"
-    final.save(art, quality=95, optimize=True)
-    # Also PNG for crisp preview
-    final.save(OUT_DIR / "anniversary_30_card.png", optimize=True)
+    out_jpg = OUT_DIR / "anniversary_30_card.jpg"
+    out_png = OUT_DIR / "anniversary_30_card.png"
+    final.save(out_jpg, quality=95, optimize=True)
+    final.save(out_png, optimize=True)
+    final.save(ARTIFACTS / "anniversary_30_card.jpg", quality=95, optimize=True)
     final.save(ARTIFACTS / "anniversary_30_card.png", optimize=True)
-    return out
+
+    # QA crops
+    final.crop((0, 140, 2400, 2320)).resize((900, 820), Image.Resampling.LANCZOS).save(
+        ARTIFACTS / "qa_collage_region.jpg", quality=90
+    )
+    return out_jpg
 
 
 if __name__ == "__main__":
+    # numpy is required for Voronoi mosaic
     path = build_card()
     print(f"Wrote {path}")
