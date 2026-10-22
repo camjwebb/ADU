@@ -23,10 +23,10 @@ ARTIFACTS = Path("/opt/cursor/artifacts")
 W, H = 5200, 3800
 SIDE_PAD = 36
 COLLAGE_TOP = 24
-# Compact message band; nearly all of the page is the full "30"
-TEXT_BAND = 480
+# Room for a large, wide quote under the collage
+TEXT_BAND = 720
 COLLAGE_H = H - COLLAGE_TOP - TEXT_BAND
-TEXT_TOP = COLLAGE_TOP + COLLAGE_H + 20
+TEXT_TOP = COLLAGE_TOP + COLLAGE_H + 28
 
 BG_TOP = (255, 246, 248)
 BG_BOT = (252, 236, 230)
@@ -91,7 +91,8 @@ def make_thirty_mask(width: int, height: int) -> Image.Image:
     b0 = draw.textbbox((0, 0), "0", font=font)
     w3, h3 = b3[2] - b3[0], b3[3] - b3[1]
     w0, h0 = b0[2] - b0[0], b0[3] - b0[1]
-    gap = max(int(min(w3, w0) * 0.07), 28)
+    # Keep 3 and 0 close, with just enough space to survive stroke thickening
+    gap = max(int(min(w3, w0) * 0.028), 12)
     total_w = w3 + gap + w0
     digit_h = max(h3, h0)
     x_origin = (render.width - total_w) // 2
@@ -259,16 +260,17 @@ def draw_message(canvas: Image.Image) -> None:
     if not Path(body_path).exists():
         body_path = "/usr/share/fonts/truetype/liberation/LiberationSerif-Italic.ttf"
 
-    title_font = ImageFont.truetype(title_path, 78)
-    body_font = ImageFont.truetype(body_path, 46)
+    # Large, wide typography so the quote reads clearly across the card
+    title_font = ImageFont.truetype(title_path, 128)
+    body_font = ImageFont.truetype(body_path, 72)
     sign_font = ImageFont.truetype(
-        "/usr/share/fonts/truetype/liberation/LiberationSerif-Italic.ttf", 50
+        "/usr/share/fonts/truetype/liberation/LiberationSerif-Italic.ttf", 78
     )
 
     cx = W // 2
-    rule_y = TEXT_TOP - 8
-    draw.line([(cx - 240, rule_y), (cx + 240, rule_y)], fill=SOFT_LINE, width=2)
-    d = 7
+    rule_y = TEXT_TOP - 4
+    draw.line([(cx - 420, rule_y), (cx + 420, rule_y)], fill=SOFT_LINE, width=3)
+    d = 10
     draw.polygon(
         [
             (cx, rule_y - d),
@@ -281,29 +283,29 @@ def draw_message(canvas: Image.Image) -> None:
 
     title = "Happy Anniversary!"
     tb = draw.textbbox((0, 0), title, font=title_font)
-    draw.text(((W - (tb[2] - tb[0])) // 2, TEXT_TOP + 12), title, font=title_font, fill=ACCENT)
+    draw.text(((W - (tb[2] - tb[0])) // 2, TEXT_TOP + 18), title, font=title_font, fill=ACCENT)
 
+    # Longer lines spanning more of the page width
     lines = [
-        "If I had to do it again,",
-        "I would still choose you.",
+        "If I had to do it again, I would still choose you.",
         "I love you.",
     ]
-    y = TEXT_TOP + 110
+    y = TEXT_TOP + 170
     for line in lines:
         lb = draw.textbbox((0, 0), line, font=body_font)
         draw.text(((W - (lb[2] - lb[0])) // 2, y), line, font=body_font, fill=(90, 55, 65))
-        y += 58
+        y += 92
 
     sign = "— Jason"
     sb = draw.textbbox((0, 0), sign, font=sign_font)
-    draw.text(((W - (sb[2] - sb[0])) // 2, y + 20), sign, font=sign_font, fill=ACCENT)
+    draw.text(((W - (sb[2] - sb[0])) // 2, y + 28), sign, font=sign_font, fill=ACCENT)
 
     foot = ImageFont.truetype(
-        "/usr/share/fonts/truetype/liberation/LiberationSerif-Regular.ttf", 30
+        "/usr/share/fonts/truetype/liberation/LiberationSerif-Regular.ttf", 40
     )
     label = "30 Years of Love"
     fb = draw.textbbox((0, 0), label, font=foot)
-    draw.text(((W - (fb[2] - fb[0])) // 2, H - 70), label, font=foot, fill=(170, 120, 130))
+    draw.text(((W - (fb[2] - fb[0])) // 2, H - 78), label, font=foot, fill=(170, 120, 130))
 
 
 def build_card() -> Path:
