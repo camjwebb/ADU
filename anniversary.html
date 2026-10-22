@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Happy 30th Anniversary</title>
+  <style>
+    :root {
+      --blush: #fff6f8;
+      --rose: #8c374b;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 24px 16px 48px;
+      background:
+        radial-gradient(ellipse at 50% 0%, #ffe8ee 0%, transparent 55%),
+        linear-gradient(180deg, var(--blush), #fcece6);
+      font-family: "Liberation Serif", "Noto Serif", Georgia, serif;
+      color: var(--rose);
+    }
+    main {
+      width: min(920px, 100%);
+      text-align: center;
+    }
+    h1 {
+      font-size: clamp(1.25rem, 3vw, 1.75rem);
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      margin: 0 0 1rem;
+    }
+    figure {
+      margin: 0;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 18px 50px rgba(140, 55, 75, 0.18);
+      background: #fff;
+    }
+    img {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+    p {
+      margin: 1.25rem 0 0;
+      font-size: 0.95rem;
+      opacity: 0.75;
+    }
+    a {
+      color: var(--rose);
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>30th Anniversary Card</h1>
+    <figure>
+      <img
+        src="anniversary_30_card.jpg"
+        alt="Photo collage in the shape of the number 30 with the message: Happy Anniversary! If I had to do it again, I would still choose you. I love you. — Jason"
+      />
+    </figure>
+    <p>
+      Print-ready image:
+      <a href="anniversary_30_card.jpg" download>anniversary_30_card.jpg</a>
+      ·
+      <a href="anniversary_30_card.png" download>PNG</a>
+    </p>
+  </main>
+</body>
+</html>
