@@ -111,7 +111,8 @@ def make_thirty_mask(width: int, height: int) -> Image.Image:
     d3 = _scale_h(d3, target_h)
     d0 = _scale_h(d0, target_h)
 
-    gap = max(int(width * 0.015), 10)
+    # Slight overlap so the pair reads as one snug "30" (no wide canyon between digits)
+    gap = -max(int(width * 0.012), 8)
     combo_w = d3.width + gap + d0.width
     combo_h = target_h
     combo = Image.new("L", (combo_w, combo_h), 0)
