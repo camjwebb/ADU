@@ -100,9 +100,9 @@ def make_thirty_mask(width: int, height: int) -> Image.Image:
     draw.text((x_origin - b3[0], y_origin - b3[1]), "3", fill=255, font=font)
     draw.text((x_origin + w3 + gap - b0[0], y_origin - b0[1]), "0", fill=255, font=font)
 
-    # Close pinholes / thicken strokes (more photo area inside each digit)
-    for _ in range(3):
-        render = render.filter(ImageFilter.MaxFilter(11))
+    # Heavy thicken so digit strokes are wide — each photo gets a larger tile
+    for _ in range(5):
+        render = render.filter(ImageFilter.MaxFilter(13))
     render = render.filter(ImageFilter.GaussianBlur(1.0))
     render = render.point(lambda p: 255 if p > 50 else 0)
 
