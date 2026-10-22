@@ -18,10 +18,15 @@ ASSETS = Path("/home/ubuntu/.cursor/projects/workspace/assets")
 OUT_DIR = Path("/workspace")
 ARTIFACTS = Path("/opt/cursor/artifacts")
 
-W, H = 2400, 3200
-COLLAGE_TOP = 160
-COLLAGE_H = 2120
-TEXT_TOP = 2380
+# Wide print canvas matched to the "30" aspect so digits can fill the page
+# (tall enough and wide enough that neither side gets cropped).
+W, H = 5200, 3800
+SIDE_PAD = 36
+COLLAGE_TOP = 24
+# Compact message band; nearly all of the page is the full "30"
+TEXT_BAND = 480
+COLLAGE_H = H - COLLAGE_TOP - TEXT_BAND
+TEXT_TOP = COLLAGE_TOP + COLLAGE_H + 20
 
 BG_TOP = (255, 246, 248)
 BG_BOT = (252, 236, 230)
@@ -68,38 +73,57 @@ def make_background() -> Image.Image:
 
 
 def make_thirty_mask(width: int, height: int) -> Image.Image:
-    """Solid continuous '30' silhouette from a heavy sans glyph.
+    """Solid continuous '30' scaled to fill the collage area (fully visible).
 
-    Digits are drawn separately with a clear gap, then lightly dilated so each
-    digit is one unbroken filled region (no cracks for the background to show).
+    Digits are drawn large, thickened, then uniformly scaled up so the full
+    "30" uses nearly the entire width and height — nothing cropped off-page.
     """
-    mask = Image.new("L", (width, height), 0)
-    draw = ImageDraw.Draw(mask)
-
     font_path = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
     if not Path(font_path).exists():
         font_path = "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf"
-    font = ImageFont.truetype(font_path, size=int(height * 0.92))
 
-    # Measure each digit so we can space them apart cleanly
+    # Render oversized, then scale-to-fit so both digits stay fully on-canvas
+    render = Image.new("L", (width * 2, height * 2), 0)
+    draw = ImageDraw.Draw(render)
+    font = ImageFont.truetype(font_path, size=int(height * 1.7))
+
     b3 = draw.textbbox((0, 0), "3", font=font)
     b0 = draw.textbbox((0, 0), "0", font=font)
     w3, h3 = b3[2] - b3[0], b3[3] - b3[1]
     w0, h0 = b0[2] - b0[0], b0[3] - b0[1]
-    gap = int(width * 0.055)
+    gap = max(int(min(w3, w0) * 0.07), 28)
     total_w = w3 + gap + w0
     digit_h = max(h3, h0)
-    x0 = (width - total_w) // 2
-    y0 = (height - digit_h) // 2 - int(height * 0.02)
+    x_origin = (render.width - total_w) // 2
+    y_origin = (render.height - digit_h) // 2
 
-    draw.text((x0 - b3[0], y0 - b3[1]), "3", fill=255, font=font)
-    draw.text((x0 + w3 + gap - b0[0], y0 - b0[1]), "0", fill=255, font=font)
+    draw.text((x_origin - b3[0], y_origin - b3[1]), "3", fill=255, font=font)
+    draw.text((x_origin + w3 + gap - b0[0], y_origin - b0[1]), "0", fill=255, font=font)
 
-    # Thicken just enough to close antialias pinholes — keep digits separate
-    for _ in range(2):
-        mask = mask.filter(ImageFilter.MaxFilter(9))
-    mask = mask.filter(ImageFilter.GaussianBlur(1.2))
-    mask = mask.point(lambda p: 255 if p > 60 else 0)
+    # Close pinholes / thicken strokes (more photo area inside each digit)
+    for _ in range(3):
+        render = render.filter(ImageFilter.MaxFilter(11))
+    render = render.filter(ImageFilter.GaussianBlur(1.0))
+    render = render.point(lambda p: 255 if p > 50 else 0)
+
+    bbox = render.getbbox()
+    if bbox is None:
+        raise SystemExit("Failed to render 30 mask")
+    cropped = render.crop(bbox)
+
+    # Fit into collage with a slim safety pad so edges never clip
+    pad = max(12, int(min(width, height) * 0.012))
+    fit_w, fit_h = width - 2 * pad, height - 2 * pad
+    scale = min(fit_w / cropped.width, fit_h / cropped.height)
+    new_w = max(1, int(cropped.width * scale))
+    new_h = max(1, int(cropped.height * scale))
+    scaled = cropped.resize((new_w, new_h), Image.Resampling.LANCZOS)
+    scaled = scaled.point(lambda p: 255 if p > 128 else 0)
+
+    mask = Image.new("L", (width, height), 0)
+    ox = (width - new_w) // 2
+    oy = (height - new_h) // 2
+    mask.paste(scaled, (ox, oy))
     return mask
 
 
@@ -197,7 +221,7 @@ def build_mosaic(mask: Image.Image, photos: list[Image.Image]) -> Image.Image:
                 photos[photo_for[rid]],
                 (bw, bh),
                 method=Image.Resampling.LANCZOS,
-                centering=(0.5, 0.42),
+                centering=(0.5, 0.45),
             ),
             dtype=np.float64,
         )
@@ -235,28 +259,29 @@ def draw_message(canvas: Image.Image) -> None:
     if not Path(body_path).exists():
         body_path = "/usr/share/fonts/truetype/liberation/LiberationSerif-Italic.ttf"
 
-    title_font = ImageFont.truetype(title_path, 72)
-    body_font = ImageFont.truetype(body_path, 44)
+    title_font = ImageFont.truetype(title_path, 78)
+    body_font = ImageFont.truetype(body_path, 46)
     sign_font = ImageFont.truetype(
-        "/usr/share/fonts/truetype/liberation/LiberationSerif-Italic.ttf", 48
+        "/usr/share/fonts/truetype/liberation/LiberationSerif-Italic.ttf", 50
     )
 
     cx = W // 2
-    draw.line([(cx - 220, TEXT_TOP - 40), (cx + 220, TEXT_TOP - 40)], fill=SOFT_LINE, width=2)
+    rule_y = TEXT_TOP - 8
+    draw.line([(cx - 240, rule_y), (cx + 240, rule_y)], fill=SOFT_LINE, width=2)
     d = 7
     draw.polygon(
         [
-            (cx, TEXT_TOP - 40 - d),
-            (cx + d, TEXT_TOP - 40),
-            (cx, TEXT_TOP - 40 + d),
-            (cx - d, TEXT_TOP - 40),
+            (cx, rule_y - d),
+            (cx + d, rule_y),
+            (cx, rule_y + d),
+            (cx - d, rule_y),
         ],
         fill=ACCENT,
     )
 
     title = "Happy Anniversary!"
     tb = draw.textbbox((0, 0), title, font=title_font)
-    draw.text(((W - (tb[2] - tb[0])) // 2, TEXT_TOP), title, font=title_font, fill=ACCENT)
+    draw.text(((W - (tb[2] - tb[0])) // 2, TEXT_TOP + 12), title, font=title_font, fill=ACCENT)
 
     lines = [
         "If I had to do it again,",
@@ -267,37 +292,48 @@ def draw_message(canvas: Image.Image) -> None:
     for line in lines:
         lb = draw.textbbox((0, 0), line, font=body_font)
         draw.text(((W - (lb[2] - lb[0])) // 2, y), line, font=body_font, fill=(90, 55, 65))
-        y += 62
+        y += 58
 
     sign = "— Jason"
     sb = draw.textbbox((0, 0), sign, font=sign_font)
-    draw.text(((W - (sb[2] - sb[0])) // 2, y + 28), sign, font=sign_font, fill=ACCENT)
+    draw.text(((W - (sb[2] - sb[0])) // 2, y + 20), sign, font=sign_font, fill=ACCENT)
 
     foot = ImageFont.truetype(
-        "/usr/share/fonts/truetype/liberation/LiberationSerif-Regular.ttf", 28
+        "/usr/share/fonts/truetype/liberation/LiberationSerif-Regular.ttf", 30
     )
     label = "30 Years of Love"
     fb = draw.textbbox((0, 0), label, font=foot)
-    draw.text(((W - (fb[2] - fb[0])) // 2, H - 90), label, font=foot, fill=(170, 120, 130))
+    draw.text(((W - (fb[2] - fb[0])) // 2, H - 70), label, font=foot, fill=(170, 120, 130))
 
 
 def build_card() -> Path:
     photos = load_photos()
     canvas = make_background().convert("RGBA")
 
-    collage_w, collage_h = W - 120, COLLAGE_H
+    collage_w, collage_h = W - 2 * SIDE_PAD, COLLAGE_H
     mask = make_thirty_mask(collage_w, collage_h)
+    bbox = mask.getbbox()
+    if bbox:
+        # Confirm full silhouette sits inside the collage (no edge clipping)
+        mx0, my0, mx1, my1 = bbox
+        assert mx0 >= 2 and my0 >= 2 and mx1 <= collage_w - 2 and my1 <= collage_h - 2, (
+            f"30 mask clipped: bbox={bbox} canvas=({collage_w},{collage_h})"
+        )
+        print(
+            f"30 size {mx1 - mx0}x{my1 - my0} in collage {collage_w}x{collage_h} "
+            f"({100 * (mx1 - mx0) / collage_w:.0f}% wide, {100 * (my1 - my0) / collage_h:.0f}% tall)"
+        )
+
     mosaic = build_mosaic(mask, photos)
 
     # Soft outer shadow only (outside the digits) so the silhouette lifts off the paper
-    shadow = mask.filter(ImageFilter.GaussianBlur(18)).point(lambda p: int(p * 0.28))
-    # Knock out the digit interior so shadow doesn't tint photo seams
+    shadow = mask.filter(ImageFilter.GaussianBlur(22)).point(lambda p: int(p * 0.26))
     shadow = ImageChops.subtract(shadow, mask.point(lambda p: 255 if p > 0 else 0))
     shade = Image.new("RGBA", (collage_w, collage_h), (90, 40, 55, 0))
     shade.putalpha(shadow)
 
-    ox = (W - collage_w) // 2
-    canvas.alpha_composite(shade, (ox, COLLAGE_TOP + 6))
+    ox = SIDE_PAD
+    canvas.alpha_composite(shade, (ox, COLLAGE_TOP + 8))
     canvas.alpha_composite(mosaic, (ox, COLLAGE_TOP))
 
     final = canvas.convert("RGB")
@@ -311,10 +347,11 @@ def build_card() -> Path:
     final.save(ARTIFACTS / "anniversary_30_card.jpg", quality=95, optimize=True)
     final.save(ARTIFACTS / "anniversary_30_card.png", optimize=True)
 
-    # QA crops
-    final.crop((0, 140, 2400, 2320)).resize((900, 820), Image.Resampling.LANCZOS).save(
-        ARTIFACTS / "qa_collage_region.jpg", quality=90
-    )
+    preview = final.resize((750, int(750 * H / W)), Image.Resampling.LANCZOS)
+    preview.save(ARTIFACTS / "anniversary_30_card_preview.jpg", quality=92)
+    final.crop((0, 0, W, COLLAGE_TOP + COLLAGE_H + 20)).resize(
+        (900, int(900 * (COLLAGE_TOP + COLLAGE_H + 20) / W)), Image.Resampling.LANCZOS
+    ).save(ARTIFACTS / "qa_collage_region.jpg", quality=90)
     return out_jpg
 
 
