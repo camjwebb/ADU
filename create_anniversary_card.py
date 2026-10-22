@@ -72,59 +72,63 @@ def make_background() -> Image.Image:
     return canvas
 
 
-def make_thirty_mask(width: int, height: int) -> Image.Image:
-    """Solid continuous '30' scaled to fill the collage area (fully visible).
+def _render_digit(ch: str, font: ImageFont.FreeTypeFont, thicken: int = 5) -> Image.Image:
+    """Render one thickened digit glyph cropped to its ink bounds."""
+    probe = Image.new("L", (8, 8), 0)
+    pb = ImageDraw.Draw(probe).textbbox((0, 0), ch, font=font)
+    tw, th = pb[2] - pb[0], pb[3] - pb[1]
+    # Generous canvas so MaxFilter thickening isn't clipped
+    pad = 80
+    canvas = Image.new("L", (tw + 2 * pad, th + 2 * pad), 0)
+    ImageDraw.Draw(canvas).text((pad - pb[0], pad - pb[1]), ch, fill=255, font=font)
+    for _ in range(thicken):
+        canvas = canvas.filter(ImageFilter.MaxFilter(13))
+    canvas = canvas.filter(ImageFilter.GaussianBlur(1.0))
+    canvas = canvas.point(lambda p: 255 if p > 50 else 0)
+    bbox = canvas.getbbox()
+    if bbox is None:
+        raise SystemExit(f"Failed to render digit {ch!r}")
+    return canvas.crop(bbox)
 
-    Digits are drawn large, thickened, then uniformly scaled up so the full
-    "30" uses nearly the entire width and height — nothing cropped off-page.
-    """
+
+def make_thirty_mask(width: int, height: int) -> Image.Image:
+    """Solid continuous '30' filling the collage — digits snug, fully visible."""
     font_path = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
     if not Path(font_path).exists():
         font_path = "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf"
-
-    # Render oversized, then scale-to-fit so both digits stay fully on-canvas
-    render = Image.new("L", (width * 2, height * 2), 0)
-    draw = ImageDraw.Draw(render)
     font = ImageFont.truetype(font_path, size=int(height * 1.7))
 
-    b3 = draw.textbbox((0, 0), "3", font=font)
-    b0 = draw.textbbox((0, 0), "0", font=font)
-    w3, h3 = b3[2] - b3[0], b3[3] - b3[1]
-    w0, h0 = b0[2] - b0[0], b0[3] - b0[1]
-    # Keep 3 and 0 close, with just enough space to survive stroke thickening
-    gap = max(int(min(w3, w0) * 0.028), 12)
-    total_w = w3 + gap + w0
-    digit_h = max(h3, h0)
-    x_origin = (render.width - total_w) // 2
-    y_origin = (render.height - digit_h) // 2
+    d3 = _render_digit("3", font)
+    d0 = _render_digit("0", font)
 
-    draw.text((x_origin - b3[0], y_origin - b3[1]), "3", fill=255, font=font)
-    draw.text((x_origin + w3 + gap - b0[0], y_origin - b0[1]), "0", fill=255, font=font)
+    # Match digit heights, then place with a tight gap (~1.5% of collage width)
+    target_h = max(d3.height, d0.height)
+    def _scale_h(img: Image.Image, th: int) -> Image.Image:
+        nw = max(1, int(img.width * th / img.height))
+        out = img.resize((nw, th), Image.Resampling.LANCZOS)
+        return out.point(lambda p: 255 if p > 128 else 0)
 
-    # Heavy thicken so digit strokes are wide — each photo gets a larger tile
-    for _ in range(5):
-        render = render.filter(ImageFilter.MaxFilter(13))
-    render = render.filter(ImageFilter.GaussianBlur(1.0))
-    render = render.point(lambda p: 255 if p > 50 else 0)
+    d3 = _scale_h(d3, target_h)
+    d0 = _scale_h(d0, target_h)
 
-    bbox = render.getbbox()
-    if bbox is None:
-        raise SystemExit("Failed to render 30 mask")
-    cropped = render.crop(bbox)
+    gap = max(int(width * 0.015), 10)
+    combo_w = d3.width + gap + d0.width
+    combo_h = target_h
+    combo = Image.new("L", (combo_w, combo_h), 0)
+    combo.paste(d3, (0, 0))
+    combo.paste(d0, (d3.width + gap, 0), d0)
 
-    # Fit into collage with a slim safety pad so edges never clip
-    pad = max(12, int(min(width, height) * 0.012))
+    # Scale the snug pair to fill the collage (slim safety pad, no cropping)
+    pad = max(10, int(min(width, height) * 0.01))
     fit_w, fit_h = width - 2 * pad, height - 2 * pad
-    scale = min(fit_w / cropped.width, fit_h / cropped.height)
-    new_w = max(1, int(cropped.width * scale))
-    new_h = max(1, int(cropped.height * scale))
-    scaled = cropped.resize((new_w, new_h), Image.Resampling.LANCZOS)
+    scale = min(fit_w / combo.width, fit_h / combo.height)
+    new_w = max(1, int(combo.width * scale))
+    new_h = max(1, int(combo.height * scale))
+    scaled = combo.resize((new_w, new_h), Image.Resampling.LANCZOS)
     scaled = scaled.point(lambda p: 255 if p > 128 else 0)
 
     mask = Image.new("L", (width, height), 0)
-    ox = (width - new_w) // 2
-    oy = (height - new_h) // 2
-    mask.paste(scaled, (ox, oy))
+    mask.paste(scaled, ((width - new_w) // 2, (height - new_h) // 2))
     return mask
 
 
